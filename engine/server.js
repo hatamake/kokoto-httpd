@@ -22,12 +22,6 @@ module.exports = function(_config) {
 	const mongoose = require('mongoose');
 	mongoose.connect(config.db);
 
-	// Static Middleware 로드
-	if (config.static) {
-		const createStaticMid = require('express').static;
-		express.use("/static", createStaticMid(path.resolve(config.path, 'views', 'static')));
-	}
-
 	// HTTP Body Parser Middleware 로드
 	const createBodyParserMid = require('body-parser');
 	express.use(createBodyParserMid.urlencoded({ extended: true }));
@@ -60,21 +54,18 @@ module.exports = function(_config) {
 		});
 	}
 
-	// Pug Template Engine Middleware 로드
-	express.set('view engine', 'pug');
-	express.set('views', path.resolve(config.path, 'views', 'templates'));
-	
-	express.locals.moment = require('moment');
+	// Error Middleware 로드
+	express.use(function(req, res, next) {
+		res.jsonAuto = function(json) {
+			if (require('lodash').isError(json.error)) {
+				json.error = json.error.toString();
+			}
 
-	const createCsrfMid = require('csurf');
-	express.use(createCsrfMid());
-	express.use(function(req, res, next){
-		res.locals['_csrf'] = req.csrfToken();
+			res.json(json);
+		};
+
 		next();
 	});
-
-	// Error Middleware 로드
-	express.use(require('./error.js'));
 
 	// Database Model 로드
 	const Model = require('../model.js');

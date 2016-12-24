@@ -1,4 +1,4 @@
-function loadApp(filename) {
+function requireApp(filename) {
 	try {
 		return require('../apps/' + filename);
 	} catch(error) {
@@ -15,17 +15,13 @@ function routeApps(config, express, io, model) {
 		let app = null;
 		let socket = null;
 
-		if ((app = loadApp(id + '.js')) !== null) {
+		if ((app = requireApp(id + '.js')) !== null) {
 			app(config, express, model);
 		}
 
-		if ((socket = loadApp(id + '.socket.js')) !== null) {
+		if ((socket = requireApp(id + '.socket.js')) !== null) {
 			socket(config, io, model);
 		}
-	});
-
-	express.get('*', function(req, res) {
-		res.autoRender('404', {}, 404);;
 	});
 
 	console.log(config.service + ' 준비 완료');
