@@ -4,6 +4,15 @@ const messages = require('../messages.json')
 
 module.exports = function(config, express, models) {
 	express.use(function(req, res, next) {
+		res.shouldSignin = function() {
+			if (req.user === null) {
+				res.jsonAuto({ error: new Error(messages.login_required) });
+				return true;
+			} else {
+				return false;
+			}
+		};
+
 		(function(callback) {
 			if (!req.session.userId) {
 				callback(null);
@@ -24,15 +33,6 @@ module.exports = function(config, express, models) {
 			req.user = user;
 			next();
 		});
-
-		res.shouldSignin = function() {
-			if (req.user === null) {
-				res.jsonAuto({ error: new Error(messages.login_required) });
-				return true;
-			} else {
-				return false;
-			}
-		};
 	});
 
 	express.post('/user/signin', function(req, res) {

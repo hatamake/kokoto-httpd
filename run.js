@@ -7,8 +7,10 @@ var engine = new Engine({
 	static: true,
 	apps: [
 		'user',
-		'document'
-	]
+		'document',
+		'tag'
+	],
+	pagination: 20
 });
 
 engine.listen(8000);

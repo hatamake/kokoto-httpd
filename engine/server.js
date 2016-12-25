@@ -21,6 +21,7 @@ module.exports = function(_config) {
 	// MongoDB Client 설정
 	const mongoose = require('mongoose');
 	mongoose.connect(config.db);
+	mongoose.Promise = Promise;
 
 	// HTTP Body Parser Middleware 로드
 	const createBodyParserMid = require('body-parser');

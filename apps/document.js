@@ -15,8 +15,13 @@ module.exports = function(config, express, models) {
 			author: req.user._id,
 			title: req.body.title,
 			markdown: req.body.markdown
-		}, function(error) {
-			res.jsonAuto({ error: error });
+		}, function(error, documentId) {
+			res.jsonAuto({
+				error: error,
+				document: {
+					_id: documentId
+				}
+			});
 		});
 	});
 
@@ -40,11 +45,11 @@ module.exports = function(config, express, models) {
 		});
 	});
 
-	express.post('/document/search/:tagId', function(req, res) {
-		const {tagId} = req.params;
-		const {lastId} = req.body;
+	express.post('/document/search', function(req, res) {
+		const tagId = (req.body.tag || null);
+		const lastId = (req.body.after || null);
 
-		models.searchDocument(tagId, lastId, function(error, result) {
+		models.searchDocument(tagId, lastId, function(error, documents) {
 			res.jsonAuto({
 				error: error,
 				documents: documents

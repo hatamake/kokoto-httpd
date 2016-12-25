@@ -1,7 +1,6 @@
 const async = require('async');
 
-const messages = require('./views/messages.json');
-const ITEM_PER_PAGE = 20;
+const messages = require('./messages.json');
 
 function shasum(input) {
 	var hasher = crypto.createHash('sha1');
@@ -28,6 +27,8 @@ function checkUserPassword(password, callback) {
 
 class Model {
 	constructor(config, mongoose) {
+		this.pagination = config.pagination;
+
 		const Schema = mongoose.Schema;
 		const ObjectId = Schema.ObjectId;
 
@@ -55,7 +56,7 @@ class Model {
 				required: true,
 				default: true
 			},
-		   	author: {
+			author: {
 				type: ObjectId,
 				ref: 'User',
 				required: true
@@ -83,8 +84,8 @@ class Model {
 				default: []
 			}
 		}, {
-			timestamps: true
-		}));
+				timestamps: true
+			}));
 
 		this.DocumentIndex = mongoose.model('DocumentIndex', new Schema({
 			items: {
@@ -120,8 +121,8 @@ class Model {
 				default: []
 			}
 		}, {
-			timestamps: true
-		}));
+				timestamps: true
+			}));
 
 		this.Tag = mongoose.model('Tag', new Schema({
 			title: {
@@ -136,7 +137,8 @@ class Model {
 			color: {
 				type: String,
 				required: true,
-				default: '#333333'
+				default: '#333333',
+				match: [/^#[0-9a-fA-F]{6}$/, messages.color_invalid]
 			}
 		}));
 	}
@@ -149,10 +151,10 @@ class Model {
 		this.User.findOne({
 			username: username,
 			password: shasum(password)
-		}, function(error, user) {
+		}, function (error, user) {
 			if (error) {
 				callback(error, null)
-			} else if(count !== 1) {
+			} else if (count !== 1) {
 				callback(null, null);
 			} else {
 				callback(null, user._id);
@@ -168,7 +170,7 @@ class Model {
 			(password, callback) => {
 				user.password = password;
 
-				this.User.create(user, function(error, addedUser) {
+				this.User.create(user, function (error, addedUser) {
 					if (error) {
 						callback(extractError(error), null);
 					} else {
@@ -193,12 +195,12 @@ class Model {
 					user.password = password;
 				}
 
-				this.User.findOneAndUpdate({ _id: id }, user, function(error) {
-					if (error) {
-						callback(extractError(error));
-					} else {
-						callback(null);
-					}
+				this.User.findOneAndUpdate({
+					_id: id
+				}, user, {
+					runValidators: true
+				}, function (error) {
+					callback(error ? extractError(error) : null);
 				});
 			}
 		])
@@ -214,7 +216,7 @@ class Model {
 			.populate('author')
 			.populate('comments')
 			.populate('tags')
-			.exec(function(error, document) {
+			.exec(function (error, document) {
 				if (error) {
 					callback(error, null);
 				} else if (!document) {
@@ -228,7 +230,7 @@ class Model {
 	addDocument(document, callback) {
 		async.waterfall([
 			(callback) => {
-				this.DocumentIndex.create({}, function(error, index) {
+				this.DocumentIndex.create({}, function (error, index) {
 					if (error) {
 						callback(error, null);
 					} else {
@@ -269,20 +271,30 @@ class Model {
 						items: null
 					},
 					lastItem: null
+				}, {
+					runValidators: true
 				}, callback);
 			}
 		], callback);
 	}
 
 	searchDocument(tagId, lastId, callback) {
+		const filter = {
+			latest: true,
+		};
+
+		if (tagId !== null) {
+			filter.tags = { $in: [tagId] };
+		}
+
+		if (lastId !== null) {
+			filter._id = { $gt: lastId };
+		}
+
 		this.Document
-			.find({
-				latest: true,
-				$in: { tags: tagId },
-				$gt: { _id: lastId }
-			})
+			.find(filter)
 			.sort('updatedAt')
-			.limit(ITEM_PER_PAGE)
+			.limit(this.pagination)
 			.exec(callback);
 	}
 
@@ -291,7 +303,7 @@ class Model {
 			(callback) => {
 				document.index = indexId;
 
-				this.Document.create(document, function(error, addedDocument) {
+				this.Document.create(document, function (error, addedDocument) {
 					if (error) {
 						callback(extractError(error), null);
 					} else {
@@ -307,6 +319,8 @@ class Model {
 						items: documentId
 					},
 					lastItem: documentId
+				}, {
+					runValidators: true
 				}, callback);
 			},
 			(callback) => {
@@ -326,9 +340,9 @@ class Model {
 					.exec(callback);
 			},
 			(index, callback) => {
-				this.Document
-					.findOne({ _id: index.lastItem })
-					.exec(callback);
+				this.Document.findOne({
+					_id: index.lastItem
+				}, callback);
 			},
 			(document, callback) => {
 				async.parallel([
@@ -351,7 +365,7 @@ class Model {
 			(callback) => {
 				async.waterfall([
 					(callback) => {
-						this.Comment.create(comment, function(error, createdComment) {
+						this.Comment.create(comment, function (error, createdComment) {
 							if (error) {
 								callback(extractError(error), null)
 							} else {
@@ -366,12 +380,10 @@ class Model {
 							$push: {
 								comments: commentId
 							}
-						}, function(error) {
-							if (error) {
-								callback(extractError(error));
-							} else {
-								callback(null);
-							}
+						}, {
+							runValidators: true
+						}, function (error) {
+							callback(error ? extractError(error) : null);
 						});
 					}
 				], callback);
@@ -390,12 +402,12 @@ class Model {
 				_decCommentTagCount(id, callback);
 			},
 			(callback) => {
-				this.Comment.findOneAndUpdate({ _id: id }, comment, function(error) {
-					if (error) {
-						callback(extractError(error));
-					} else {
-						callback(null);
-					}
+				this.Comment.findOneAndUpdate({
+					_id: id
+				}, comment, {
+					runValidators: true
+				}, function (error) {
+					callback(error ? extractError(error) : null);
 				});
 			},
 			(callback) => {
@@ -440,10 +452,14 @@ class Model {
 			.exec(callback);
 	}
 
+	findTag(title, callback) {
+		this.Tag.findOne({ title: title }, callback);
+	}
+
 	addTag(title, callback) {
 		this.Tag.create({
 			title: title
-		}, function(error, tag) {
+		}, function (error, tag) {
 			if (error) {
 				callback(extractError(error), null);
 			} else {
@@ -452,8 +468,16 @@ class Model {
 		});
 	}
 
-	removeTag(id, callback) {
-		this.Tag.remove({ _id: id }, callback);		
+	paintTag(id, color, callback) {
+		this.Tag.findOneAndUpdate({
+			_id: id
+		}, {
+			color: color
+		}, {
+			runValidators: true
+		}, function (error) {
+			callback(error ? extractError(error) : null);
+		});
 	}
 
 	incTagCount(id, callback) {
@@ -470,6 +494,10 @@ class Model {
 		}, {
 			$inc: { count: -1 }
 		}, callback);
+	}
+
+	removeTag(id, callback) {
+		this.Tag.remove({ _id: id }, callback);
 	}
 }
 
