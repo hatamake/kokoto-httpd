@@ -6,13 +6,12 @@
   "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "run": "node run.js"
+    "start": "node run.js"
   },
   "contributors": [
-    "cumul <gg6123@naver.com>",
-    "raon0211 <raon0211@outlook.com>"
+    "cumul <gg6123@naver.com>"
   ],
-  "license": "UNLICENSED",
+  "license": "MIT",
   "dependencies": {
     "async": "^2.1.4",
     "body-parser": "^1.15.2",
