@@ -39,16 +39,19 @@ module.exports = function(config, express, models) {
 		const {username, password} = req.body;
 
 		models.authUser(username, password, function(error, userId) {
-			if (!error && userId === null) {
-				error = new Error(messages.login_failed);
-			}
-
 			if (error) {
 				res.jsonAuto({ error: error });
-			} else {
-				req.session.userId = userId;
-				res.jsonAuto({ error: null });
+				return;
 			}
+
+			if (userId === null) {
+				res.jsonAuto({
+					error: new Error(messages.login_failed)
+				});
+			}
+
+			req.session.userId = userId;
+			res.jsonAuto({ error: null });
 		});
 	});
 
@@ -109,7 +112,14 @@ module.exports = function(config, express, models) {
 	express.get('/user/remove', function(req, res) {
 		if (res.shouldSignin()) { return; }
 
-		models.removeUser(req.user._id, function(error) {
+		async.parallel([
+			(callback) => {
+				models.removeUser(req.user._id, callback);
+			},
+			(callback) => {
+				req.session.destroy(callback);
+			}
+		], function(error) {
 			res.jsonAuto({ error: error });
 		});
 	});

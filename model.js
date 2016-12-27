@@ -145,7 +145,7 @@ class Model {
 		}, function (error, user) {
 			if (error) {
 				callback(error, null)
-			} else if (count !== 1) {
+			} else if (user.length !== 1) {
 				callback(null, null);
 			} else {
 				callback(null, user._id);
@@ -263,7 +263,7 @@ class Model {
 	}
 
 	removeDocument(indexId, callback) {
-		async.parallel([
+		async.series([
 			(callback) => {
 				this._outdateDocument(indexId, callback);
 			},
@@ -296,6 +296,7 @@ class Model {
 
 		this.Document
 			.find(filter)
+			.select('_id')
 			.sort('updatedAt')
 			.limit(this.pagination)
 			.exec(callback);
@@ -345,13 +346,19 @@ class Model {
 			(callback) => {
 				this.DocumentIndex
 					.findOne({ _id: indexId })
-					.select({ items: { $splice: -1 } })
+					.select({ items: { $slice: -1 } })
 					.exec(callback);
 			},
 			(index, callback) => {
-				this.Document.findOne({
-					_id: index.items[0]
-				}, callback);
+				const documentId = (index ? index.items[0] : null);
+
+				if (documentId === null) {
+					callback(new Error(messages.document_not_exist));
+				} else {
+					this.Document.findOne({
+						_id: index.items[0]
+					}, callback);
+				}
 			},
 			(document, callback) => {
 				async.parallel([
