@@ -1,4 +1,5 @@
 const async = require('async');
+const crypto = require('crypto');
 
 const messages = require('./messages.json');
 
@@ -21,7 +22,7 @@ function checkUserPassword(password, callback) {
 	if (!password || password.trim().length == 0) {
 		callback(new Error(messages.password_required), null);
 	} else {
-		callback(null, shasum(user.password));
+		callback(null, shasum(password));
 	}
 }
 
@@ -75,29 +76,20 @@ class Model {
 			},
 			comments: {
 				type: [{ type: ObjectId, ref: 'Comment' }],
-				required: true,
 				default: []
 			},
 			tags: {
 				type: [{ type: ObjectId, ref: 'Tag' }],
-				required: true,
 				default: []
 			}
 		}, {
-				timestamps: true
-			}));
+			timestamps: true
+		}));
 
 		this.DocumentIndex = mongoose.model('DocumentIndex', new Schema({
 			items: {
 				type: [{ type: ObjectId, ref: 'Document' }],
-				required: true,
 				default: []
-			},
-			lastItem: {
-				type: ObjectId,
-				ref: 'Document',
-				required: true,
-				default: null
 			}
 		}));
 
@@ -117,12 +109,11 @@ class Model {
 			},
 			tags: {
 				type: [{ type: ObjectId, ref: 'Tag' }],
-				required: true,
 				default: []
 			}
 		}, {
-				timestamps: true
-			}));
+			timestamps: true
+		}));
 
 		this.Tag = mongoose.model('Tag', new Schema({
 			title: {
@@ -210,9 +201,9 @@ class Model {
 		this.User.remove({ _id: id }, callback);
 	}
 
-	getDocument(id, callback) {
+	getDocument(documentId, callback) {
 		this.Document
-			.findOne({ _id: id })
+			.findOne({ _id: documentId })
 			.populate('author')
 			.populate('comments')
 			.populate('tags')
@@ -223,6 +214,19 @@ class Model {
 					callback(new Error(messages.cannot_find_document), null);
 				} else {
 					callback(null, document);
+				}
+			});
+	}
+
+	getDocumentHistory(indexId, callback) {
+		this.DocumentIndex
+			.findOne({ _id: indexId })
+			.select('items')
+			.exec(function(error, index) {
+				if (error) {
+					callback(error, null);
+				} else {
+					callback(null, index.items);
 				}
 			});
 	}
@@ -241,8 +245,8 @@ class Model {
 			(indexId, callback) => {
 				this._addDocument(indexId, document, callback);
 			},
-			(callback) => {
-				callback(null, indexId);
+			(addedDocument, callback) => {
+				callback(null, addedDocument.index);
 			}
 		], callback);
 	}
@@ -269,8 +273,7 @@ class Model {
 				}, {
 					$push: {
 						items: null
-					},
-					lastItem: null
+					}
 				}, {
 					runValidators: true
 				}, callback);
@@ -299,26 +302,26 @@ class Model {
 	}
 
 	_addDocument(indexId, document, callback) {
-		async.waterfall([
+		async.series([
 			(callback) => {
 				document.index = indexId;
 
 				this.Document.create(document, function (error, addedDocument) {
 					if (error) {
-						callback(extractError(error), null);
+						callback(extractError(error));
 					} else {
-						callback(null, addedDocument._id);
+						document = addedDocument;
+						callback(null);
 					}
 				});
 			},
-			(documentId, callback) => {
+			(callback) => {
 				this.DocumentIndex.findOneAndUpdate({
-					_id: indexId
+					_id: document.index
 				}, {
 					$push: {
-						items: documentId
-					},
-					lastItem: documentId
+						items: document._id
+					}
 				}, {
 					runValidators: true
 				}, callback);
@@ -328,7 +331,13 @@ class Model {
 					this.incTagCount(tagId, callback);
 				}, callback);
 			}
-		], callback);
+		], function(error) {
+			if (error) {
+				callback(error, null);
+			} else {
+				callback(null, document);
+			}
+		});
 	}
 
 	_outdateDocument(indexId, callback) {
@@ -336,12 +345,12 @@ class Model {
 			(callback) => {
 				this.DocumentIndex
 					.findOne({ _id: indexId })
-					.select('lastItem')
+					.select({ items: { $splice: -1 } })
 					.exec(callback);
 			},
 			(index, callback) => {
 				this.Document.findOne({
-					_id: index.lastItem
+					_id: index.items[0]
 				}, callback);
 			},
 			(document, callback) => {

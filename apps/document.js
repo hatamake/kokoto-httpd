@@ -8,6 +8,15 @@ module.exports = function(config, express, models) {
 		});
 	});
 
+	express.get('/document/history/:indexId', function(req, res) {
+		models.getDocumentHistory(req.params.indexId, function(error, history) {
+			res.jsonAuto({
+				error: error,
+				history: history
+			});
+		});
+	});
+
 	express.post('/document/add', function(req, res) {
 		if (res.shouldSignin()) { return; }
 
@@ -15,11 +24,11 @@ module.exports = function(config, express, models) {
 			author: req.user._id,
 			title: req.body.title,
 			markdown: req.body.markdown
-		}, function(error, documentId) {
+		}, function(error, indexId) {
 			res.jsonAuto({
 				error: error,
-				document: {
-					_id: documentId
+				index: {
+					_id: indexId
 				}
 			});
 		});

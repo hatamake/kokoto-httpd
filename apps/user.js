@@ -61,21 +61,15 @@ module.exports = function(config, express, models) {
 	});
 
 	express.post('/user/signup', function(req, res) {
-		const {username, password, passwordRe} = req.body;
+		const {username, password} = req.body;
 
 		async.waterfall([
 			function(callback) {
 				if (!password) {
 					callback(new Error(messages.password_required));
-					return;
+				} else {
+					callback(null);
 				}
-				
-				if (password !== passwordRe) {
-					callback(new Error(messages.password_mismatch));
-					return;
-				}
-				
-				callback(null);
 			},
 			function(callback) {
 				models.addUser({
@@ -91,17 +85,9 @@ module.exports = function(config, express, models) {
 	express.post('/user/update', function(req, res) {
 		if (res.shouldSignin()) { return; }
 
-		const {username, password, passwordRe} = req.body;
+		const {username, password} = req.body;
 
 		async.waterfall([
-			function(callback) {
-				if (password !== passwordRe) {
-					callback(new Error(messages.password_mismatch));
-					return;
-				}
-
-				callback(null);
-			},
 			function(callback) {
 				const user = {};
 

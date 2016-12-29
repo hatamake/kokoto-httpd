@@ -11,6 +11,8 @@ module.exports = function(config, express, models) {
 	});
 
 	express.get('/tag/findOrAdd/:title', function(req, res) {
+		if (res.shouldSignin()) { return; }
+
 		const {title} = req.params;
 
 		async.waterfall([
@@ -35,6 +37,8 @@ module.exports = function(config, express, models) {
 	});
 
 	express.post('/tag/paint/:id', function(req, res) {
+		if (res.shouldSignin()) { return; }
+
 		const {id} = req.params;
 		const {color} = req.body;
 
