@@ -139,18 +139,24 @@ class Model {
 	}
 
 	authUser(username, password, callback) {
-		this.User.findOne({
-			username: username,
-			password: shasum(password)
-		}, function (error, user) {
-			if (error) {
-				callback(error, null)
-			} else if (user.length !== 1) {
-				callback(null, null);
-			} else {
-				callback(null, user._id);
+		async.waterfall([
+			(callback) => {
+				checkUserPassword(password, callback);
+			},
+			(hashedPassword, callback) => {
+				this.User.findOne({
+					username: username,
+					password: hashedPassword
+				}, callback);
+			},
+			(user, callback) => {
+				if (!user) {
+					callback(null, null);
+				} else {
+					callback(null, user._id);
+				}
 			}
-		});
+		], callback);
 	}
 
 	addUser(user, callback) {

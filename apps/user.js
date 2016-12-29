@@ -6,7 +6,7 @@ module.exports = function(config, express, models) {
 	express.use(function(req, res, next) {
 		res.shouldSignin = function() {
 			if (req.user === null) {
-				res.jsonAuto({ error: new Error(messages.login_required) });
+				res.status(403).jsonAuto({ error: new Error(messages.login_required) });
 				return true;
 			} else {
 				return false;
@@ -48,6 +48,7 @@ module.exports = function(config, express, models) {
 				res.jsonAuto({
 					error: new Error(messages.login_failed)
 				});
+				return;
 			}
 
 			req.session.userId = userId;
