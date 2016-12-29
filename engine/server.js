@@ -59,9 +59,12 @@ module.exports = function(_config) {
 	express.use(function(req, res, next) {
 		res.jsonAuto = function(json) {
 			if (require('lodash').isError(json.error)) {
-				json.error = json.error.toString();
+				json.error = {
+					name: json.error.name,
+					message: json.error.message
+				};
 			}
-
+			
 			res.json(json);
 		};
 
