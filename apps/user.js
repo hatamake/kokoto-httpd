@@ -35,6 +35,12 @@ module.exports = function(config, express, models) {
 		});
 	});
 
+	express.get('/user/status', function(req, res) {
+		res.jsonAuto({
+			signedIn: (req.user !== null)
+		});
+	});
+
 	express.post('/user/signin', function(req, res) {
 		const {username, password} = req.body;
 
