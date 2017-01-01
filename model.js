@@ -509,9 +509,10 @@ class Model {
 		this.Tag.findOne({ title: title }, callback);
 	}
 
-	addTag(title, callback) {
+	addTag(title, color, callback) {
 		this.Tag.create({
-			title: title
+			title: title,
+			color: color
 		}, function (error, tag) {
 			if (error) {
 				callback(extractError(error), null);
@@ -521,7 +522,7 @@ class Model {
 		});
 	}
 
-	findOrAddTag(title, callback) {
+	findOrAddTag(title, color, callback) {
 		async.waterfall([
 			(callback) => {
 				this.findTag(title, callback);
@@ -530,7 +531,7 @@ class Model {
 				if (tag) {
 					callback(null, tag._id);
 				} else {
-					this.addTag(title, callback);
+					this.addTag(title, color, callback);
 				}
 			}
 		], callback);

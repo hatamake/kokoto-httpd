@@ -1,3 +1,5 @@
+const async = require('async');
+
 module.exports = function(config, express, models) {
 	express.get('/document/get/:documentId', function(req, res) {
 		models.getDocument(req.params.documentId, function(error, document) {
@@ -22,8 +24,8 @@ module.exports = function(config, express, models) {
 
 		async.waterfall([
 			(callback) => {
-				async.map(req.body.tags, function(tagTitle, callback) {
-					models.findOrAddTag(tagTitle, callback);
+				async.map(req.body.tags, function(tag, callback) {
+					models.findOrAddTag(tag.title, tag.color, callback);
 				}, callback);
 			},
 			(tags, callback) => {
