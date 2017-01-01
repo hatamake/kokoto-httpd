@@ -326,7 +326,7 @@ class Model {
 
 		this.Document
 			.find(filter)
-			.sort('updatedAt')
+			.sort('-updatedAt')
 			.limit(this.pagination)
 			.populate('author')
 			.populate('tags')
@@ -501,7 +501,10 @@ class Model {
 	getTags(callback) {
 		this.Tag
 			.find()
-			.sort('count')
+			.sort([
+				['count', -1],
+				['title', 1]
+			])
 			.exec(callback);
 	}
 
