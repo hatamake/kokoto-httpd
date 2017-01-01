@@ -20,11 +20,21 @@ module.exports = function(config, express, models) {
 	express.post('/document/add', function(req, res) {
 		if (res.shouldSignin()) { return; }
 
-		models.addDocument({
-			author: req.user._id,
-			title: req.body.title,
-			markdown: req.body.markdown
-		}, function(error, indexId) {
+		async.waterfall([
+			(callback) => {
+				async.map(req.body.tags, function(tagTitle, callback) {
+					models.findOrAddTag(tagTitle, callback);
+				}, callback);
+			},
+			(tags, callback) => {
+				models.addDocument({
+					author: req.user._id,
+					title: req.body.title,
+					markdown: req.body.markdown,
+					tags: tags
+				}, callback);
+			}
+		], function(error, indexId) {
 			res.jsonAuto({
 				error: error,
 				index: {

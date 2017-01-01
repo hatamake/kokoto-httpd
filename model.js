@@ -74,8 +74,7 @@ class Model {
 			},
 			title: {
 				type: String,
-				required: [true, messages.title_required],
-				unique: [true, messages.title_exist]
+				required: [true, messages.title_required]
 			},
 			markdown: {
 				type: String,
@@ -520,6 +519,21 @@ class Model {
 				callback(null, tag._id);
 			}
 		});
+	}
+
+	findOrAddTag(title, callback) {
+		async.waterfall([
+			(callback) => {
+				this.findTag(title, callback);
+			},
+			(tag, callback) => {
+				if (tag) {
+					callback(null, tag._id);
+				} else {
+					this.addTag(title, callback);
+				}
+			}
+		], callback);
 	}
 
 	paintTag(id, color, callback) {

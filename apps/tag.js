@@ -10,32 +10,6 @@ module.exports = function(config, express, models) {
 		});
 	});
 
-	express.get('/tag/findOrAdd/:title', function(req, res) {
-		if (res.shouldSignin()) { return; }
-
-		const {title} = req.params;
-
-		async.waterfall([
-			function(callback) {
-				models.findTag(title, callback);
-			},
-			function(tag, callback) {
-				if (tag) {
-					callback(null, tag._id);
-				} else {
-					models.addTag(title, callback);
-				}
-			}
-		], function(error, tagId) {
-			res.jsonAuto({
-				error: error,
-				tag: {
-					_id: (tagId || null)
-				}
-			});
-		});
-	});
-
 	express.post('/tag/paint/:id', function(req, res) {
 		if (res.shouldSignin()) { return; }
 
