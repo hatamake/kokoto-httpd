@@ -327,10 +327,17 @@ class Model {
 
 		this.Document
 			.find(filter)
-			.select('_id')
 			.sort('updatedAt')
 			.limit(this.pagination)
-			.exec(callback);
+			.populate('author')
+			.populate('tags')
+			.exec(function(error, documents) {
+				if (error) {
+					callback(error, null);
+				} else {
+					callback(null, documents);
+				}
+			});
 	}
 
 	_addDocument(indexId, document, callback) {
