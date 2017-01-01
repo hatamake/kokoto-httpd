@@ -30,7 +30,7 @@ function sanitizeUser(user) {
 	const result = {};
 
 	['_id', 'username'].forEach(function(key) {
-		result[key] = user.key;
+		result[key] = user[key];
 	});
 
 	return result;

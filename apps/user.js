@@ -45,6 +45,10 @@ module.exports = function(config, express, models) {
 		const {username, password} = req.body;
 
 		models.authUser(username, password, function(error, user) {
+			if (user) {
+				req.session.userId = user._id;
+			}
+
 			res.jsonAuto({
 				error: error,
 				user: user
