@@ -36,8 +36,10 @@ module.exports = function(config, express, models) {
 	});
 
 	express.get('/user/status', function(req, res) {
+		if (res.shouldSignin()) { return; }
+
 		res.jsonAuto({
-			signedIn: (req.user !== null)
+			user: req.user
 		});
 	});
 
