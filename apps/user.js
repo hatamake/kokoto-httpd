@@ -46,21 +46,36 @@ module.exports = function(config, express, models) {
 	express.post('/user/signin', function(req, res) {
 		const {username, password} = req.body;
 
-		models.authUser(username, password, function(error, userId) {
-			if (error) {
-				res.jsonAuto({ error: error });
-				return;
-			}
-
-			if (userId === null) {
-				res.jsonAuto({
-					error: new Error(messages.login_failed)
+		async.waterfall([
+			(callback) => {
+				models.authUser(username, password, function(error, userId) {
+					if (error) {
+						callback(error, null);
+					} else if (userId === null) {
+						callback(new Error(messages.login_failed), null);
+					} else {
+						callback(null, userId);
+					}
 				});
-				return;
-			}
+			},
+			(userId, callback) => {
+				models.getUser(userId, function(error, user) {
+					if (error) {
+						callback(error, null);
+					} else if (user === null) {
+						callback(new Error(messages.login_failed), null);
+					} else {
+						delete user.password;
 
-			req.session.userId = userId;
-			res.jsonAuto({ error: null });
+						callback(null, user);
+					}
+				});
+			}
+		], function(error, user) {
+			res.jsonAuto({
+				error: error,
+				user: user
+			});
 		});
 	});
 
@@ -97,23 +112,18 @@ module.exports = function(config, express, models) {
 	express.post('/user/update', function(req, res) {
 		if (res.shouldSignin()) { return; }
 
+		const user = {};
 		const {username, password} = req.body;
 
-		async.waterfall([
-			function(callback) {
-				const user = {};
+		if (username) {
+			user.username = username;
+		}
 
-				if (username) {
-					user.username = username;
-				}
+		if (password) {
+			user.password = password;
+		}
 
-				if (password) {
-					user.password = password;
-				}
-
-				models.updateUser(req.user._id, user, callback);
-			}
-		], function(error) {
+		models.updateUser(req.user._id, user, function(error) {
 			res.jsonAuto({ error: error });
 		});
 	});
