@@ -6,7 +6,7 @@ module.exports = function(config, express, models) {
 	express.use(function(req, res, next) {
 		res.shouldSignin = function() {
 			if (req.user === null) {
-				res.status(403).jsonAuto({ error: new Error(messages.login_required) });
+				res.jsonAuto({ error: new Error(messages.login_required) });
 				return true;
 			} else {
 				return false;
