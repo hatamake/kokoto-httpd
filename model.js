@@ -1,5 +1,5 @@
-const async = require('async');
 const crypto = require('crypto');
+const async = require('async');
 
 const messages = require('./messages.json');
 
@@ -24,6 +24,16 @@ function checkUserPassword(password, callback) {
 	} else {
 		callback(null, shasum(password));
 	}
+}
+
+function sanitizeUser(user) {
+	const result = {};
+
+	['_id', 'username'].forEach(function(key) {
+		result[key] = user.key;
+	});
+
+	return result;
 }
 
 class Model {
@@ -134,8 +144,23 @@ class Model {
 		}));
 	}
 
-	getUser(id, callback) {
-		this.User.findOne({ _id: id }, callback);
+	getUser(id, sanitize, callback) {
+		if (callback === undefined) {
+			callback = sanitize;
+			sanitize = false;
+		}
+
+		this.User.findOne({ _id: id }, function(error, user) {
+			if (error) {
+				callback(error, null);
+			} else {
+				if (sanitize) {
+					user = sanitizeUser(user);
+				}
+
+				callback(null, user);
+			}
+		});
 	}
 
 	authUser(username, password, callback) {
@@ -151,9 +176,9 @@ class Model {
 			},
 			(user, callback) => {
 				if (!user) {
-					callback(null, null);
+					callback(new Error(messages.login_failed), null);
 				} else {
-					callback(null, user._id);
+					callback(null, sanitizeUser(user));
 				}
 			}
 		], callback);
@@ -171,7 +196,7 @@ class Model {
 					if (error) {
 						callback(extractError(error), null);
 					} else {
-						callback(null, addedUser._id);
+						callback(null, sanitizeUser(addedUser));
 					}
 				});
 			}

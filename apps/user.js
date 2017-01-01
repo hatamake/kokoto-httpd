@@ -19,7 +19,7 @@ module.exports = function(config, express, models) {
 				return;
 			}
 
-			models.getUser(req.session.userId, function(error, user) {
+			models.getUser(req.session.userId, true, function(error, user) {
 				if (!user) {
 					callback(null);
 					return;
@@ -36,42 +36,15 @@ module.exports = function(config, express, models) {
 	});
 
 	express.get('/user/status', function(req, res) {
-		if (res.shouldSignin()) { return; }
-
-		res.jsonAuto({
-			user: req.user
-		});
+		if (!res.shouldSignin()) {
+			res.jsonAuto({ user: req.user });
+		}
 	});
 
 	express.post('/user/signin', function(req, res) {
 		const {username, password} = req.body;
 
-		async.waterfall([
-			(callback) => {
-				models.authUser(username, password, function(error, userId) {
-					if (error) {
-						callback(error, null);
-					} else if (userId === null) {
-						callback(new Error(messages.login_failed), null);
-					} else {
-						callback(null, userId);
-					}
-				});
-			},
-			(userId, callback) => {
-				models.getUser(userId, function(error, user) {
-					if (error) {
-						callback(error, null);
-					} else if (user === null) {
-						callback(new Error(messages.login_failed), null);
-					} else {
-						delete user.password;
-
-						callback(null, user);
-					}
-				});
-			}
-		], function(error, user) {
+		models.authUser(username, password, function(error, user) {
 			res.jsonAuto({
 				error: error,
 				user: user
@@ -104,8 +77,11 @@ module.exports = function(config, express, models) {
 					password: password
 				}, callback);
 			}
-		], function(error) {
-			res.jsonAuto({ error: error });
+		], function(error, user) {
+			res.jsonAuto({
+				error: error,
+				user: user
+			});
 		});
 	});
 
