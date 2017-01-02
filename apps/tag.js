@@ -1,8 +1,8 @@
 const async = require('async');
 
-module.exports = function(config, express, models) {
+module.exports = function(config, express, model) {
 	express.get('/tag/list', function(req, res) {
-		models.getTags(function(error, tags) {
+		model.getTags(function(error, tags) {
 			res.jsonAuto({
 				error: error,
 				tags: tags
@@ -16,7 +16,7 @@ module.exports = function(config, express, models) {
 		const {id} = req.params;
 		const {color} = req.body;
 
-		models.paintTag(id, color, function(error) {
+		model.paintTag(id, color, function(error) {
 			res.jsonAuto({
 				error: error
 			});

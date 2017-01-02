@@ -8,7 +8,7 @@ const messages = require('../messages.json')
 const uploadDirPath = path.resolve(__dirname, '..', 'static', 'user');
 const defaultPicturePath = path.resolve(uploadDirPath, 'default.png');
 
-module.exports = function(config, express, models) {
+module.exports = function(config, express, model) {
 	express.use(function(req, res, next) {
 		res.shouldSignin = function() {
 			if (req.user === null) {
@@ -25,7 +25,7 @@ module.exports = function(config, express, models) {
 				return;
 			}
 
-			models.getUser(req.session.userId, true, function(error, user) {
+			model.getUser(req.session.userId, true, function(error, user) {
 				if (!user) {
 					callback(null);
 					return;
@@ -71,7 +71,7 @@ module.exports = function(config, express, models) {
 	express.post('/user/signin', function(req, res) {
 		const {username, password} = req.body;
 
-		models.authUser(username, password, function(error, user) {
+		model.authUser(username, password, function(error, user) {
 			if (user) {
 				req.session.userId = user._id;
 			}
@@ -103,7 +103,7 @@ module.exports = function(config, express, models) {
 				}
 			},
 			function(callback) {
-				models.addUser({
+				model.addUser({
 					username: username,
 					password: password
 				}, callback);
@@ -178,7 +178,7 @@ module.exports = function(config, express, models) {
 				callback(null, user);
 			},
 			function(user, callback) {
-				models.updateUser(req.user._id, user, callback);
+				model.updateUser(req.user._id, user, callback);
 			}
 		], function(error) {
 			res.jsonAuto({ error: error });
@@ -190,7 +190,7 @@ module.exports = function(config, express, models) {
 
 		async.parallel([
 			function(callback) {
-				models.removeUser(req.user._id, callback);
+				model.removeUser(req.user._id, callback);
 			},
 			function(callback) {
 				req.session.destroy(callback);

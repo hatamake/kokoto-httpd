@@ -544,7 +544,7 @@ class Model {
 			},
 			(tag, callback) => {
 				if (tag) {
-					if (tag.color === color) {
+					if (tag.color !== color) {
 						this.paintTag(tag._id, color, callback);
 					} else {
 						callback(null, tag._id);
