@@ -5,10 +5,10 @@
     "username_required": "사용자 이름을 입력해야 합니다.",
     "username_invalid": "올바르지 않은 사용자 이름입니다.",
     "password_required": "비밀번호를 입력해야 합니다",
-	"content_required": "내용을 입력해야 합니다.",
-	"cannot_find_document": "문서를 찾을 수 없습니다.",
+    "document_not_exist": "존재하지 않는 문서입니다.",
     "title_required": "제목을 입력해야 합니다.",
+    "content_required": "내용을 입력해야 합니다.",
     "title_exist": "이미 존재하는 제목입니다.",
     "color_invalid": "올바르지 않은 색상입니다.",
-    "document_not_exist": "이미 삭제된 문서입니다."
+    "request_invalid": "올바르지 않은 요청입니다."
 }

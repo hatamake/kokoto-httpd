@@ -224,7 +224,7 @@ class Model {
 					callback(error ? extractError(error) : null);
 				});
 			}
-		])
+		], callback);
 	}
 
 	removeUser(id, callback) {
@@ -241,7 +241,7 @@ class Model {
 				if (error) {
 					callback(error, null);
 				} else if (!document) {
-					callback(new Error(messages.cannot_find_document), null);
+					callback(new Error(messages.document_not_exist), null);
 				} else {
 					callback(null, document);
 				}
@@ -525,21 +525,6 @@ class Model {
 		});
 	}
 
-	findOrAddTag(title, color, callback) {
-		async.waterfall([
-			(callback) => {
-				this.findTag(title, callback);
-			},
-			(tag, callback) => {
-				if (tag) {
-					callback(null, tag._id);
-				} else {
-					this.addTag(title, color, callback);
-				}
-			}
-		], callback);
-	}
-
 	paintTag(id, color, callback) {
 		this.Tag.findOneAndUpdate({
 			_id: id
@@ -550,6 +535,25 @@ class Model {
 		}, function (error) {
 			callback(error ? extractError(error) : null);
 		});
+	}
+
+	findOrAddTag(title, color, callback) {
+		async.waterfall([
+			(callback) => {
+				this.findTag(title, callback);
+			},
+			(tag, callback) => {
+				if (tag) {
+					if (tag.color === color) {
+						this.paintTag(tag._id, color, callback);
+					} else {
+						callback(null, tag._id);
+					}
+				} else {
+					this.addTag(title, color, callback);
+				}
+			}
+		], callback);
 	}
 
 	incTagCount(id, callback) {
