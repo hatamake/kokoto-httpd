@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const async = require('async');
+const marked = require('marked');
 
 const messages = require('./messages.json');
 
@@ -343,6 +344,7 @@ class Model {
 		async.series([
 			(callback) => {
 				document.index = indexId;
+				document.html = marked(document.markdown);
 
 				this.Document.create(document, function (error, addedDocument) {
 					if (error) {
