@@ -236,7 +236,15 @@ class Model {
 	}
 
 	removeUser(id, callback) {
-		this.User.remove({ _id: id }, callback);
+		this.User.remove({ _id: id }, function(error, result) {
+			if (error) {
+				callback(error);
+			} else if (result.result.n === 0) {
+				callback(new Error(messages.user_not_exist));
+			} else {
+				callback(null);
+			}
+		});
 	}
 
 	getDocument(documentId, callback) {
@@ -524,13 +532,13 @@ class Model {
 		this.Comment.remove({
 			_id: id,
 		 	author: author
-		}, function(error, comment) {
+		}, function(error, result) {
 			if (error) {
-				callback(extractError(error), null);
-			} else if (!comment) {
-				callback(new Error(messages.comment_not_exist), null);
+				callback(extractError(error));
+			} else if (result.result.n === 0) {
+				callback(new Error(messages.comment_not_exist));
 			} else {
-				callback(null, comment);
+				callback(null);
 			}
 		});
 	}
@@ -647,10 +655,10 @@ class Model {
 	}
 
 	removeTag(id, callback) {
-		this.Tag.remove({ _id: id }, function(error, tag) {
+		this.Tag.remove({ _id: id }, function(error, result) {
 			if (error) {
 				callback(error);
-			} else if (!tag) {
+			} else if (result.result.n === 0) {
 				callback(new Error(messages.tag_not_exist));
 			} else {
 				callback(null)
