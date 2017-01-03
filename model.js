@@ -153,7 +153,7 @@ class Model {
 				required: [true, messages.content_required]
 			},
 			range: {
-				type: [new Schema({
+				type: new Schema({
 					start: {
 						type: Number,
 						required: true
@@ -164,7 +164,7 @@ class Model {
 					}
 				}, {
 					_id : false
-				})],
+				}),
 				required: true
 			}
 		}, {
