@@ -20,9 +20,10 @@ $ npm install
 
 * options: Detailed options for running server.
 	- options.path: A path to working directory where `apps/`, `static/` and `model.js` exists. (Default: The path to the package root)
-	- options.secret: A secret key phrase for encrypting sessions. (Default: A random 44-length string)
+	- options.secret: A secret key phrase for encrypting sessions. (Default: A random 44-length [String](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String))
 	- options.db: [MongoDB connection URI](https://docs.mongodb.com/manual/reference/connection-string/) used for connecting to the database. (Default: `'mongodb://127.0.0.1/kokoto'`)
 	- options.session: A cookie field name for storing session ID. (Default: `'session'`)
+	- options.apps: An array of filename in `apps/` or app module itself. Items in this option are appended to the default value.
 	- options.pagination: A count of items that will be displayed in one page. (Default: `20`)
 
 #### Returns

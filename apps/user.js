@@ -64,7 +64,7 @@ module.exports = function(config, express, model) {
 			}
 		], function(error) {
 			if (error) {
-				res.status(error.status).end();
+				res.status(500).end();
 			}
 		});
 	});

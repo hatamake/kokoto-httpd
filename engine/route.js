@@ -1,33 +1,20 @@
+const _ = require('lodash');
 const path = require('path');
+const util = require('util');
 
-function requireApp(basePath, filename, quiet) {
-	try {
-		const filepath = path.resolve(basePath, 'apps', filename);
-		return require(filepath);
-	} catch(error) {
-		if (quiet && error.code === "MODULE_NOT_FOUND") {
-			return null;
-		} else {
-			throw error;
-		}
-	}
-}
+const messages = require('../messages.json');
 
-function routeApps(config, express, io, model) {
-	config['apps'].forEach(function(id) {
-		let app = null;
-		let socket = null;
-
-		if ((app = requireApp(config.path, id + '.js', false)) !== null) {
-			app(config, express, model);
+function routeApps(config, express, model) {
+	config['apps'].forEach(function(app) {
+		if (_.isString(app)) {
+			const filepath = path.resolve(config.path, 'apps', app);
+			app = require(filepath);
 		}
 
-		if ((socket = requireApp(config.path, id + '.socket.js', true)) !== null) {
-			socket(config, io, model);
-		}
+		app(config, express, model);
 	});
 
-	console.log(config.service + ' 준비 완료');
+	console.log(util.format(messages.server_ready, config.service));
 };
 
 module.exports = routeApps;

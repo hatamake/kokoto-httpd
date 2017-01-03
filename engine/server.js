@@ -1,12 +1,10 @@
-const extend = require('deep-extend');
 const path = require('path');
-const crypto = require('crypto');
 
 function KokotoHttpd(_config) {
-	const config = extend({
+	const config = require('deep-extend')({
 		service: 'kokoto-httpd',
 		path: path.resolve(__dirname, '..'),
-		secret: crypto.randomBytes(32).toString('base64'),
+		secret: require('crypto').randomBytes(32).toString('base64'),
 		db: 'mongodb://127.0.0.1/kokoto',
 		session: 'session',
 		apps: [
@@ -20,7 +18,6 @@ function KokotoHttpd(_config) {
 	// HTTP Server 설정
 	const express = require('express')();
 	const server = require('http').createServer(express);
-	const io = require('socket.io')(server);
 
 	// MongoDB Client 설정
 	const mongoose = require('mongoose');
@@ -53,10 +50,6 @@ function KokotoHttpd(_config) {
 
 		// 로드
 		express.use(sessionMid);
-
-		io.use(function(socket, next) {
-			sessionMid(socket.request, socket.request.res, next);
-		});
 	}
 
 	// Error Middleware 로드
@@ -80,7 +73,7 @@ function KokotoHttpd(_config) {
 	const model = new Model(config, mongoose);
 
 	// App. Routing 설정
-	require('./route.js')(config, express, io, model);
+	require('./route.js')(config, express, model);
 
 	return server;
 };
