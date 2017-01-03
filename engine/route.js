@@ -7,7 +7,7 @@ const messages = require('../messages.json');
 function routeApps(config, express, model) {
 	config['apps'].forEach(function(app) {
 		if (_.isString(app)) {
-			const filepath = path.resolve(config.path, 'apps', app);
+			const filepath = path.join(config.path, 'apps', app);
 			app = require(filepath);
 		}
 

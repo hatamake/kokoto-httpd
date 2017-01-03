@@ -7,8 +7,8 @@ const Jimp = require("jimp");
 const messages = require('../messages.json')
 
 module.exports = function(config, express, model) {
-	const uploadDirPath = path.resolve(config.path, 'static', 'user');
-	const defaultPicturePath = path.resolve(uploadDirPath, 'default.png');
+	const uploadDirPath = path.join(config.path, 'static', 'user');
+	const defaultPicturePath = path.join(uploadDirPath, 'default.png');
 
 	express.use(function(req, res, next) {
 		res.shouldSignin = function() {
@@ -51,7 +51,7 @@ module.exports = function(config, express, model) {
 	express.get(`${config.url}/user/picture/:id`, function(req, res) {
 		async.waterfall([
 			function(callback) {
-				res.sendFile(path.resolve(uploadDirPath, `${req.params.id}.png`), function(error) {
+				res.sendFile(path.join(uploadDirPath, `${req.params.id}.png`), function(error) {
 					callback(null, !!error);
 				});
 			},
@@ -147,7 +147,7 @@ module.exports = function(config, express, model) {
 				}
 
 				const oldPath = files.picture.path;
-				const newPath = path.resolve(uploadDirPath, `${req.user._id}.png`);
+				const newPath = path.join(uploadDirPath, `${req.user._id}.png`);
 
 				async.waterfall([
 					function(callback) {

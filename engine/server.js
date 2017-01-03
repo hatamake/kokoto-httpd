@@ -8,7 +8,7 @@ function KokotoHttpd(config) {
 
 		return _.merge({
 			service: 'kokoto-httpd',
-			path: path.resolve(__dirname, '..'),
+			path: path.join(__dirname, '..'),
 			url: '',
 			secret: require('crypto').randomBytes(32).toString('base64'),
 			db: 'mongodb://127.0.0.1/kokoto',
@@ -76,7 +76,7 @@ function KokotoHttpd(config) {
 	});
 
 	// Database Model 로드
-	const Model = require(path.resolve(config.path, 'model.js'));
+	const Model = require(path.join(config.path, 'model.js'));
 	const model = new Model(config, mongoose);
 
 	// App. Routing 설정
