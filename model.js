@@ -113,7 +113,7 @@ class Model {
 				type: String,
 				required: [true, messages.content_required]
 			},
-			position: {
+			range: {
 				type: [{ type: Number }],
 				required: true
 			},
