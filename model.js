@@ -509,15 +509,17 @@ class Model {
 		});
 	}
 
-	paintTag(id, color, callback) {
+	updateTag(id, tag, callback) {
 		this.Tag.findOneAndUpdate({
 			_id: id
-		}, {
-			color: color
-		}, {
+		}, tag, {
 			runValidators: true
 		}, function (error) {
-			callback(error ? extractError(error) : null);
+			if (error) {
+				callback(extractError(error), null);
+			} else {
+				callback(null, id);
+			}			
 		});
 	}
 
@@ -529,7 +531,7 @@ class Model {
 			(tag, callback) => {
 				if (tag) {
 					if (tag.color !== color) {
-						this.paintTag(tag._id, color, callback);
+						this.updateTag(tag._id, { color: color }, callback);
 					} else {
 						callback(null, tag._id);
 					}

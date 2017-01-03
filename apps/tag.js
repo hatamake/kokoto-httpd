@@ -8,13 +8,16 @@ module.exports = function(config, express, model) {
 		});
 	});
 
-	express.post(`${config.url}/tag/paint/:id`, function(req, res) {
+	express.post(`${config.url}/tag/update/:id`, function(req, res) {
 		if (res.shouldSignin()) { return; }
 
 		const {id} = req.params;
-		const {color} = req.body;
+		const {title, color} = req.body;
 
-		model.paintTag(id, color, function(error) {
+		model.updateTag(id, {
+			title: title,
+			color: color
+		}, function(error) {
 			res.jsonAuto({
 				error: error
 			});

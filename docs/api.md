@@ -151,13 +151,14 @@
  - error: [ErrorObject](object.md#errorobject). 성공적으로 처리된 경우 [null](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/null).
  - tags: [TagObject](object.md#tagobject)로 이루어진 [Array](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array). 오류가 발생한 경우 [null](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/null).
 
-## POST /tag/paint/:id
+## POST /tag/update/:id
 
-요청된 태그의 색상을 변경합니다. 로그인 상태에서만 사용할 수 있습니다.
+요청된 태그의 정보를 변경합니다. 로그인 상태에서만 사용할 수 있습니다.
 
 * 요청
- - id (URL): 색상을 변경할 태그의 ID
- - color: 새 색상의 HEX 색상코드 (예를 들어, #333333)
+ - id (URL): 변경될 태그의 ID
+ - title: 태그의 새 제목
+ - color: 태그의 새 HEX 색상 코드 (예를 들어, #333333)
 
 * 응답
  - error: [ErrorObject](object.md#errorobject). 성공적으로 처리된 경우 [null](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/null).
