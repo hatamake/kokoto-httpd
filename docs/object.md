@@ -51,7 +51,8 @@
 
 ```javascript
 {
-
+  start: Number,         // 댓글이 시작되는 지점
+  end:   Number          // 댓글이 끝나는 지점
 }
 ```
 
