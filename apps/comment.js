@@ -35,7 +35,7 @@ module.exports = function(config, express, model) {
 	express.get(`${config.url}/comment/remove/:id`, function(req, res) {
 		if (res.shouldSignin()) { return; }
 
-		model.removeComment(id, req.user._id, function(error) {
+		model.removeComment(req.params.id, req.user._id, function(error) {
 			res.jsonAuto({
 				error: error
 			});

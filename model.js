@@ -37,27 +37,6 @@ function sanitizeUser(user) {
 	return result;
 }
 
-function tidyPopulation(doc, keys, callback) {
-	async.each(keys, function(key, callback) {
-		async.filter(doc[key], function(item, callback) {
-			callback(null, (item !== null));
-		}, function(error, neatValue) {
-			if (error) {
-				callback(error);
-			} else {
-				doc[key] = neatValue;
-				callback(null);
-			}
-		});
-	}, function(error) {
-		if (error) {
-			callback(error, doc);
-		} else {
-			callback(null, doc);
-		}
-	});
-}
-
 class Model {
 	constructor(config, mongoose) {
 		this.pagination = config.pagination;
@@ -65,7 +44,7 @@ class Model {
 		const Schema = mongoose.Schema;
 		const ObjectId = Schema.ObjectId;
 
-		this.User = mongoose.model('User', {
+		this.User = mongoose.model('User', new Schema({
 			username: {
 				type: String,
 				unique: [true, messages.username_exist],
@@ -76,7 +55,7 @@ class Model {
 				type: String,
 				required: true
 			}
-		});
+		}));
 
 		this.Document = mongoose.model('Document', new Schema({
 			index: {
@@ -278,7 +257,25 @@ class Model {
 				}
 			},
 			(document, callback) => {
-				tidyPopulation(document, ['comments', 'tags'], callback);
+				async.parallel([
+					(callback) => {
+						this._populateComments(document.comments, callback);
+					},
+					(callback) => {
+						async.filter(document.tags, function(tag, callback) {
+							callback(null, (tag !== null));
+						}, callback);
+					}
+				], function(error, results) {
+					if (error) {
+						callback(error, null);
+					} else {
+						document.comments = results[0];
+						document.tags = results[1];
+
+						callback(null, document);
+					}
+				});
 			}
 		], callback);
 	}
@@ -344,20 +341,20 @@ class Model {
 	}
 
 	searchDocument(tagId, lastId, callback) {
-		const filter = {
-			latest: true,
-		};
-
-		if (tagId !== null) {
-			filter.tags = { $in: [tagId] };
-		}
-
-		if (lastId !== null) {
-			filter._id = { $gt: lastId };
-		}
-
 		async.waterfall([
 			(callback) => {
+				const filter = {
+					latest: true,
+				};
+
+				if (tagId !== null) {
+					filter.tags = { $in: [tagId] };
+				}
+
+				if (lastId !== null) {
+					filter._id = { $gt: lastId };
+				}
+
 				this.Document
 					.find(filter)
 					.sort('-updatedAt')
@@ -368,7 +365,25 @@ class Model {
 			},
 			(documents, callback) => {
 				async.map(documents, function(document, callback) {
-					tidyPopulation(document, ['tags'], callback);
+					async.parallel([
+						(callback) => {
+							callback(null, sanitizeUser(document.author));
+						},
+						(callback) => {
+							async.filter(document.tags, function(tag, callback) {
+								callback(null, (tag !== null));
+							}, callback);
+						}
+					], function(error, results) {
+						if (error) {
+							callback(error, null);
+						} else {
+							document.author = results[0];
+							document.tags = results[1];
+
+							callback(null, document);
+						}
+					});
 				}, callback);
 			}
 		], callback);
@@ -516,6 +531,39 @@ class Model {
 				callback(new Error(messages.comment_not_exist), null);
 			} else {
 				callback(null, comment);
+			}
+		});
+	}
+
+	_populateComments(comments, callback) {
+		const result = [];
+
+		async.each(comments, (rawComment, callback) => {
+			if (rawComment) {
+				async.waterfall([
+					(callback) => {
+						this.Comment.populate(rawComment, {
+							path: 'author',
+							model: this.User
+						}, callback);
+					},
+					(comment, callback) => {
+						comment.author = sanitizeUser(comment.author);
+						result.push(comment);
+
+						callback(null);
+					}
+				], callback);
+			} else {
+				callback(null);
+			}
+		}, function(error) {
+			if (error) {
+				callback(error, null);
+			} else {
+				callback(null, result.sort(function(a, b) {
+					return (b.createdAt - a.createdAt);
+				}));
 			}
 		});
 	}
