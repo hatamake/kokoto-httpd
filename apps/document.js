@@ -24,24 +24,28 @@ module.exports = function(config, express, model) {
 
 		async.waterfall([
 			(callback) => {
-				async.map(req.body.tags, function(tag, callback) {
-					model.findOrAddTag(tag.title, tag.color, callback);
+				async.map(req.body.tags, function(reqTag, callback) {
+					model.findOrAddTag(reqTag.title, reqTag.color, function(error, tag) {
+						if (error) {
+							callback(error, null);
+						} else {
+							callback(null, tag._id);
+						}
+					});
 				}, callback);
 			},
-			(tags, callback) => {
+			(tagIds, callback) => {
 				model.addDocument({
 					author: req.user._id,
 					title: req.body.title,
 					markdown: req.body.markdown,
-					tags: tags
+					tags: tagIds
 				}, callback);
 			}
-		], function(error, indexId) {
+		], function(error, document) {
 			res.jsonAuto({
 				error: error,
-				index: {
-					_id: indexId
-				}
+				document: document
 			});
 		});
 	});
@@ -51,24 +55,28 @@ module.exports = function(config, express, model) {
 
 		async.waterfall([
 			(callback) => {
-				async.map(req.body.tags, function(tag, callback) {
-					model.findOrAddTag(tag.title, tag.color, callback);
+				async.map(req.body.tags, function(reqTag, callback) {
+					model.findOrAddTag(reqTag.title, reqTag.color, function(error, tag) {
+						if (error) {
+							callback(error, null);
+						} else {
+							callback(null, tag._id);
+						}
+					});
 				}, callback);
 			},
-			(tags, callback) => {
+			(tagIds, callback) => {
 				model.updateDocument(req.params.indexId, {
 					author: req.user._id,
 					title: req.body.title,
 					markdown: req.body.markdown,
-					tags: tags
+					tags: tagIds
 				}, callback);
 			}
-		], function(error, indexId) {
+		], function(error, document) {
 			res.jsonAuto({
 				error: error,
-				index: {
-					_id: indexId
-				}
+				document: document
 			});
 		});
 	});

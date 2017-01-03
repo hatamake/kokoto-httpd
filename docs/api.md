@@ -103,7 +103,7 @@
 
 * 응답
  - error: [ErrorObject](object.md#errorobject). 성공적으로 조회된 경우 [null](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/null).
- - index._id: 생성된 문서 색인의 ID
+ - document: 추가된 [DocumentObject](object.md#documentobject). 오류가 발생한 경우 [null](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/null).
 
 ## POST /document/update/:indexId
 
@@ -116,6 +116,7 @@
 
 * 응답
  - error: [ErrorObject](object.md#errorobject). 성공적으로 조회된 경우 [null](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/null).
+ - document: 편집된 후의 [DocumentObject](object.md#documentobject). 오류가 발생한 경우 [null](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/null).
 
 ## GET /document/remove/:indexId
 
@@ -159,6 +160,17 @@
  - id (URL): 변경될 태그의 ID
  - title: 태그의 새 제목
  - color: 태그의 새 HEX 색상 코드 (예를 들어, #333333)
+
+* 응답
+ - error: [ErrorObject](object.md#errorobject). 성공적으로 처리된 경우 [null](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/null).
+ - tag: 변경된 후의 [TagObject](object.md#tagobject). 오류가 발생한 경우 [null](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/null).
+
+## GET /tag/remove/:id
+
+기존의 태그를 삭제합니다. 기존의 문서에서도 해당 태그가 제거됩니다. 로그인 상태에서만 사용할 수 있습니다.
+
+* 요청
+ - id (URL): 삭제할 태그의 ID
 
 * 응답
  - error: [ErrorObject](object.md#errorobject). 성공적으로 처리된 경우 [null](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/null).

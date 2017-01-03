@@ -17,7 +17,18 @@ module.exports = function(config, express, model) {
 		model.updateTag(id, {
 			title: title,
 			color: color
-		}, function(error) {
+		}, function(error, tag) {
+			res.jsonAuto({
+				error: error,
+				tag: tag
+			});
+		});
+	});
+
+	express.get(`${config.url}/tag/remove/:id`, function(req, res) {
+		if (res.shouldSignin()) { return; }
+
+		model.removeTag(req.params.id, function(error) {
 			res.jsonAuto({
 				error: error
 			});

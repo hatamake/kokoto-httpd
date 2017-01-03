@@ -240,6 +240,10 @@ class Model {
 				} else if (!document) {
 					callback(new Error(messages.document_not_exist), null);
 				} else {
+					document.tags = document.tags.filter(function(tag) {
+						return (tag !== null);
+					});
+
 					callback(null, document);
 				}
 			});
@@ -271,9 +275,6 @@ class Model {
 			},
 			(indexId, callback) => {
 				this._addDocument(indexId, document, callback);
-			},
-			(addedDocument, callback) => {
-				callback(null, addedDocument.index);
 			}
 		], callback);
 	}
@@ -331,6 +332,10 @@ class Model {
 				if (error) {
 					callback(error, null);
 				} else {
+					document.tags = document.tags.filter(function(tag) {
+						return (tag !== null);
+					});
+
 					callback(null, documents);
 				}
 			});
@@ -504,7 +509,7 @@ class Model {
 			if (error) {
 				callback(extractError(error), null);
 			} else {
-				callback(null, tag._id);
+				callback(null, tag);
 			}
 		});
 	}
@@ -514,12 +519,14 @@ class Model {
 			_id: id
 		}, tag, {
 			runValidators: true
-		}, function (error) {
+		}, function (error, updatedTag) {
 			if (error) {
 				callback(extractError(error), null);
+			} else if (!updatedTag) {
+				callback(new Error(messages.tag_not_exist), null);
 			} else {
-				callback(null, id);
-			}			
+				callback(null, updatedTag);
+			}
 		});
 	}
 
@@ -533,7 +540,7 @@ class Model {
 					if (tag.color !== color) {
 						this.updateTag(tag._id, { color: color }, callback);
 					} else {
-						callback(null, tag._id);
+						callback(null, tag);
 					}
 				} else {
 					this.addTag(title, color, callback);
@@ -559,7 +566,15 @@ class Model {
 	}
 
 	removeTag(id, callback) {
-		this.Tag.remove({ _id: id }, callback);
+		this.Tag.remove({ _id: id }, function(error, tag) {
+			if (error) {
+				callback(error);
+			} else if (!tag) {
+				callback(new Error(messages.tag_not_exist));
+			} else {
+				callback(null)
+			}
+		});
 	}
 }
 

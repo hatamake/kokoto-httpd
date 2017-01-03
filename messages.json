@@ -9,6 +9,7 @@
     "document_not_exist": "존재하지 않는 문서입니다.",
     "title_required": "제목을 입력해야 합니다.",
     "content_required": "내용을 입력해야 합니다.",
+    "tag_not_exist": "태그가 존재하지 않습니다.",
     "title_exist": "이미 존재하는 제목입니다.",
     "color_invalid": "올바르지 않은 색상입니다.",
     "request_invalid": "올바르지 않은 요청입니다.",
