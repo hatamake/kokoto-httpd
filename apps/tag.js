@@ -1,7 +1,7 @@
 const async = require('async');
 
 module.exports = function(config, express, model) {
-	express.get('/tag/list', function(req, res) {
+	express.get(`${config.url}/tag/list`, function(req, res) {
 		model.getTags(function(error, tags) {
 			res.jsonAuto({
 				error: error,
@@ -10,7 +10,7 @@ module.exports = function(config, express, model) {
 		});
 	});
 
-	express.post('/tag/paint/:id', function(req, res) {
+	express.post(`${config.url}/tag/paint/:id`, function(req, res) {
 		if (res.shouldSignin()) { return; }
 
 		const {id} = req.params;

@@ -1,5 +1,5 @@
 {
-  "name": "kokoto",
+  "name": "kokoto-httpd",
   "version": "0.0.1",
   "description": "Backend pseudo-RESTful API server for Kokoto",
   "main": "engine/server.js",

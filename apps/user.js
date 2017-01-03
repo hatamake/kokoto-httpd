@@ -42,13 +42,13 @@ module.exports = function(config, express, model) {
 		});
 	});
 
-	express.get('/user/status', function(req, res) {
+	express.get(`${config.url}/user/status`, function(req, res) {
 		if (!res.shouldSignin()) {
 			res.jsonAuto({ user: req.user });
 		}
 	});
 
-	express.get('/user/picture/:id', function(req, res) {
+	express.get(`${config.url}/user/picture/:id`, function(req, res) {
 		async.waterfall([
 			function(callback) {
 				res.sendFile(path.resolve(uploadDirPath, `${req.params.id}.png`), function(error) {
@@ -69,7 +69,7 @@ module.exports = function(config, express, model) {
 		});
 	});
 
-	express.post('/user/signin', function(req, res) {
+	express.post(`${config.url}/user/signin`, function(req, res) {
 		const {username, password} = req.body;
 
 		model.authUser(username, password, function(error, user) {
@@ -84,7 +84,7 @@ module.exports = function(config, express, model) {
 		});
 	});
 
-	express.get('/user/signout', function(req, res) {
+	express.get(`${config.url}/user/signout`, function(req, res) {
 		if (res.shouldSignin()) { return; }
 
 		req.session.destroy(function(error) {
@@ -92,7 +92,7 @@ module.exports = function(config, express, model) {
 		});
 	});
 
-	express.post('/user/signup', function(req, res) {
+	express.post(`${config.url}/user/signup`, function(req, res) {
 		const {username, password} = req.body;
 
 		async.series([
@@ -117,7 +117,7 @@ module.exports = function(config, express, model) {
 		});
 	});
 
-	express.post('/user/update', function(req, res) {
+	express.post(`${config.url}/user/update`, function(req, res) {
 		if (res.shouldSignin()) { return; }
 
 		async.waterfall([
@@ -186,7 +186,7 @@ module.exports = function(config, express, model) {
 		});
 	});
 
-	express.get('/user/remove', function(req, res) {
+	express.get(`${config.url}/user/remove`, function(req, res) {
 		if (res.shouldSignin()) { return; }
 
 		async.parallel([

@@ -1,19 +1,26 @@
+const _ = require('lodash');
 const path = require('path');
 
-function KokotoHttpd(_config) {
-	const config = require('deep-extend')({
-		service: 'kokoto-httpd',
-		path: path.resolve(__dirname, '..'),
-		secret: require('crypto').randomBytes(32).toString('base64'),
-		db: 'mongodb://127.0.0.1/kokoto',
-		session: 'session',
-		apps: [
-			'user',
-			'document',
-			'tag'
-		],
-		pagination: 20
-	}, _config);
+function KokotoHttpd(config) {
+	config = (function(config) {
+		const apps = (config.apps || []);
+		delete config.apps;
+
+		return _.merge({
+			service: 'kokoto-httpd',
+			path: path.resolve(__dirname, '..'),
+			url: '',
+			secret: require('crypto').randomBytes(32).toString('base64'),
+			db: 'mongodb://127.0.0.1/kokoto',
+			session: 'session',
+			apps: [
+				'user',
+				'document',
+				'tag'
+			].concat(apps),
+			pagination: 20
+		}, config);
+	})(config);
 
 	// HTTP Server 설정
 	const express = require('express')();

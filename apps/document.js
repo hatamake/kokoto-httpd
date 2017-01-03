@@ -1,7 +1,7 @@
 const async = require('async');
 
 module.exports = function(config, express, model) {
-	express.get('/document/get/:documentId', function(req, res) {
+	express.get(`${config.url}/document/get/:documentId`, function(req, res) {
 		model.getDocument(req.params.documentId, function(error, document) {
 			res.jsonAuto({
 				error: error,
@@ -10,7 +10,7 @@ module.exports = function(config, express, model) {
 		});
 	});
 
-	express.get('/document/history/:indexId', function(req, res) {
+	express.get(`${config.url}/document/history/:indexId`, function(req, res) {
 		model.getDocumentHistory(req.params.indexId, function(error, history) {
 			res.jsonAuto({
 				error: error,
@@ -19,7 +19,7 @@ module.exports = function(config, express, model) {
 		});
 	});
 
-	express.post('/document/add', function(req, res) {
+	express.post(`${config.url}/document/add`, function(req, res) {
 		if (res.shouldSignin()) { return; }
 
 		async.waterfall([
@@ -46,7 +46,7 @@ module.exports = function(config, express, model) {
 		});
 	});
 
-	express.post('/document/update/:indexId', function(req, res) {
+	express.post(`${config.url}/document/update/:indexId`, function(req, res) {
 		if (res.shouldSignin()) { return; }
 
 		async.waterfall([
@@ -73,7 +73,7 @@ module.exports = function(config, express, model) {
 		});
 	});
 
-	express.get('/document/remove/:indexId', function(req, res) {
+	express.get(`${config.url}/document/remove/:indexId`, function(req, res) {
 		if (res.shouldSignin()) { return; }
 
 		model.removeDocument(req.params.indexId, function(error) {
@@ -81,7 +81,7 @@ module.exports = function(config, express, model) {
 		});
 	});
 
-	express.post('/document/search', function(req, res) {
+	express.post(`${config.url}/document/search`, function(req, res) {
 		const tagId = (req.body.tag || null);
 		const lastId = (req.body.after || null);
 
