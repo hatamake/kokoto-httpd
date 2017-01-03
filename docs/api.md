@@ -107,7 +107,7 @@
 
 ## POST /document/update/:indexId
 
-기존의 문서를 편집하고 문서 색인에 추가합니다. 로그인 상태에서만 사용할 수 있습니다.
+기존의 문서를 편집하고 문서 색인에 추가합니다. 로그인 상태에서, 자신이 생성한 문서에 대해서만 사용할 수 있습니다.
 
 * 요청
  - indexId (URL): 편집할 문서 색인의 ID
@@ -119,7 +119,7 @@
 
 ## GET /document/remove/:indexId
 
-기존의 문서를 보관하고 문서 색인에 기록합니다. 로그인 상태에서만 사용할 수 있습니다.
+기존의 문서를 보관하고 문서 색인에 기록합니다. 로그인 상태에서, 자신이 생성한 문서에 대해서만 사용할 수 있습니다.
 
 * 요청
  - indexId (URL): 보관을 기록할 문서 색인의 ID
@@ -151,17 +151,6 @@
  - error: [ErrorObject](object.md#errorobject). 성공적으로 처리된 경우 [null](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/null).
  - tags: [TagObject](object.md#tagobject)로 이루어진 [Array](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array). 오류가 발생한 경우 [null](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/null).
 
-## GET /tag/findOrAdd/:title
-
-요청된 제목의 태그를 찾아 정보를 조회합니다. 태그가 존재하지 않는 경우에는 생성합니다. 로그인 상태에서만 사용할 수 있습니다.
-
-* 요청
- - title (URL): 찾을 태그의 제목
-
-* 응답
- - error: [ErrorObject](object.md#errorobject). 성공적으로 처리된 경우 [null](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/null).
- - tag._id: 조회(생성)된 태그의 ID
-
 ## POST /tag/paint/:id
 
 요청된 태그의 색상을 변경합니다. 로그인 상태에서만 사용할 수 있습니다.
@@ -169,6 +158,45 @@
 * 요청
  - id (URL): 색상을 변경할 태그의 ID
  - color: 새 색상의 HEX 색상코드 (예를 들어, #333333)
+
+* 응답
+ - error: [ErrorObject](object.md#errorobject). 성공적으로 처리된 경우 [null](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/null).
+
+# /comment
+
+댓글의 작성, 수정, 삭제 등과 관련된 API
+
+## POST /comment/add
+
+새로운 댓글을 작성합니다. 로그인 상태에서만 사용할 수 있습니다.
+
+* 요청
+ - documentId: 새 댓글이 달리는 문서의 ID
+ - content: 새 댓글의 내용
+ - range: [RangeObject](object.md#rangeobject). 새 댓글이 문서에서 차지하는 위치 정보.
+
+* 응답
+ - error: [ErrorObject](object.md#errorobject). 성공적으로 처리된 경우 [null](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/null).
+ - comment: [CommentObject](object.md#commentobject). 오류가 발생한 경우 [null](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/null).
+
+## POST /comment/update/:id
+
+기존의 댓글을 수정합니다. 로그인 상태에서, 자신이 생성한 댓글에 대해서만 사용할 수 있습니다.
+
+* 요청
+ - id (URL): 수정하고자 하는 댓글의 ID
+ - content: 댓글의 새 내용
+
+* 응답
+ - error: [ErrorObject](object.md#errorobject). 성공적으로 처리된 경우 [null](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/null).
+ - comment: [CommentObject](object.md#commentobject). 오류가 발생한 경우 [null](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/null).
+
+## GET /comment/remove/:id
+
+기존의 댓글을 삭제합니다. 로그인 상태에서, 자신이 생성한 댓글에 대해서만 사용할 수 있습니다.
+
+* 요청
+ - id (URL): 삭제하고자 하는 댓글의 ID
 
 * 응답
  - error: [ErrorObject](object.md#errorobject). 성공적으로 처리된 경우 [null](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/null).

@@ -103,28 +103,6 @@ class Model {
 			}
 		}));
 
-		this.Comment = mongoose.model('Comment', new Schema({
-			author: {
-				type: ObjectId,
-				ref: 'User',
-				required: true
-			},
-			content: {
-				type: String,
-				required: [true, messages.content_required]
-			},
-			range: {
-				type: [{ type: Number }],
-				required: true
-			},
-			tags: {
-				type: [{ type: ObjectId, ref: 'Tag' }],
-				default: []
-			}
-		}, {
-			timestamps: true
-		}));
-
 		this.Tag = mongoose.model('Tag', new Schema({
 			title: {
 				type: String,
@@ -141,6 +119,24 @@ class Model {
 				default: '#333333',
 				match: [/^#[0-9a-fA-F]{6}$/, messages.color_invalid]
 			}
+		}));
+
+		this.Comment = mongoose.model('Comment', new Schema({
+			author: {
+				type: ObjectId,
+				ref: 'User',
+				required: true
+			},
+			content: {
+				type: String,
+				required: [true, messages.content_required]
+			},
+			range: {
+				type: [{ type: Number }],
+				required: true
+			}
+		}, {
+			timestamps: true
 		}));
 	}
 
@@ -285,7 +281,7 @@ class Model {
 	updateDocument(indexId, document, callback) {
 		async.series([
 			(callback) => {
-				this._outdateDocument(indexId, callback);
+				this._outdateDocument(indexId, document.author, callback);
 			},
 			(callback) => {
 				this._addDocument(indexId, document, callback);
@@ -296,7 +292,7 @@ class Model {
 	removeDocument(indexId, callback) {
 		async.series([
 			(callback) => {
-				this._outdateDocument(indexId, callback);
+				this._outdateDocument(indexId, document.author, callback);
 			},
 			(callback) => {
 				this.DocumentIndex.findOneAndUpdate({
@@ -380,7 +376,7 @@ class Model {
 		});
 	}
 
-	_outdateDocument(indexId, callback) {
+	_outdateDocument(indexId, authorId, callback) {
 		async.waterfall([
 			(callback) => {
 				this.DocumentIndex
@@ -392,11 +388,19 @@ class Model {
 				const documentId = (index ? index.items[0] : null);
 
 				if (documentId === null) {
-					callback(new Error(messages.document_not_exist));
+					callback(null, null);
 				} else {
 					this.Document.findOne({
-						_id: index.items[0]
+						_id: index.items[0],
+						author: authorId
 					}, callback);
+				}
+			},
+			(document, callback) => {
+				if (document) {
+					callback(null, document);
+				} else {
+					callback(new Error(messages.document_not_exist), null);
 				}
 			},
 			(document, callback) => {
@@ -416,88 +420,66 @@ class Model {
 	}
 
 	addComment(documentId, comment, callback) {
-		async.parallel([
+		async.waterfall([
 			(callback) => {
-				async.waterfall([
-					(callback) => {
-						this.Comment.create(comment, function (error, createdComment) {
-							if (error) {
-								callback(extractError(error), null)
-							} else {
-								callback(null, createdComment._id);
-							}
-						});
-					},
-					(commentId, callback) => {
-						this.Document.findOneAndUpdate({
-							_id: documentId
-						}, {
-							$push: {
-								comments: commentId
-							}
-						}, {
-							runValidators: true
-						}, function (error) {
-							callback(error ? extractError(error) : null);
-						});
+				this.Comment.create(comment, function (error, createdComment) {
+					if (error) {
+						callback(extractError(error), null)
+					} else {
+						callback(null, createdComment);
 					}
-				], callback);
+				});
 			},
-			(callback) => {
-				async.each(comment.tags, (tagId, callback) => {
-					this.incTagCount(tagId, callback);
-				}, callback);
+			(createdComment, callback) => {
+				this.Document.findOneAndUpdate({
+					_id: documentId
+				}, {
+					$push: {
+						comments: createdComment._id
+					}
+				}, {
+					runValidators: true
+				}, function (error) {
+					if (error) {
+						callback(extractError(error), null);
+					} else {
+						callback(null, createdComment);
+					}
+				});
 			}
-		]);
+		], callback);
 	}
 
 	updateComment(id, comment, callback) {
-		async.parallel([
-			(callback) => {
-				_decCommentTagCount(id, callback);
-			},
-			(callback) => {
-				this.Comment.findOneAndUpdate({
-					_id: id
-				}, comment, {
-					runValidators: true
-				}, function (error) {
-					callback(error ? extractError(error) : null);
-				});
-			},
-			(callback) => {
-				async.each(comment.tags, (tagId, callback) => {
-					this.incTagCount(tagId, callback);
-				}, callback);
+		this.Comment.findOneAndUpdate({
+			_id: id,
+			author: comment.author
+		}, comment, {
+			runValidators: true
+		}, function (error, comment) {
+			if (error) {
+				callback(extractError(error), null);
+			} else if (!comment) {
+				callback(new Error(messages.comment_not_exist), null);
+			} else {
+				callback(null, comment);
 			}
-		], callback);
+		});
 	}
 
-	removeComment(id, callback) {
-		async.parallel([
-			(callback) => {
-				this._decCommentTagCount(id, callback);
-			},
-			(callback) => {
-				this.comment.remove({ _id: id }, callback);
+	removeComment(id, author, callback) {
+		this.Comment.remove({
+			_id: id,
+		 	author: author
+		}, function(error, comment) {
+			if (error) {
+				callback(extractError(error), null);
+			} else if (!comment) {
+				callback(new Error(messages.comment_not_exist), null);
+			} else {
+				callback(null, comment);
 			}
-		], callback);
-	}
-
-	_decCommentTagCount(id, callback) {
-		async.waterfall([
-			(callback) => {
-				this.Comment
-					.findOne({ _id: id })
-					.select('tags')
-					.exec(callback);
-			},
-			(comment, callback) => {
-				async.each(comment.tags, (tagId, callback) => {
-					this.decTagCount(tagId, callback);
-				}, callback);
-			}
-		], callback);
+		});
 	}
 
 	getTags(callback) {

@@ -76,7 +76,10 @@ module.exports = function(config, express, model) {
 	express.get(`${config.url}/document/remove/:indexId`, function(req, res) {
 		if (res.shouldSignin()) { return; }
 
-		model.removeDocument(req.params.indexId, function(error) {
+		const indexId = req.params.indexId;
+		const authorId = req.user._id;
+
+		model.removeDocument(indexId, authorId, function(error) {
 			res.jsonAuto({ error: error });
 		});
 	});

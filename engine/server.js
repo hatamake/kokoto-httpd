@@ -16,7 +16,8 @@ function KokotoHttpd(config) {
 			apps: [
 				'user',
 				'document',
-				'tag'
+				'tag',
+				'comment'
 			].concat(apps),
 			pagination: 20
 		}, config);

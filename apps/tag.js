@@ -1,5 +1,3 @@
-const async = require('async');
-
 module.exports = function(config, express, model) {
 	express.get(`${config.url}/tag/list`, function(req, res) {
 		model.getTags(function(error, tags) {

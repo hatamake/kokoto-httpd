@@ -24,18 +24,6 @@
 }
 ```
 
-# CommentObject
-
-```javascript
-{
-  _id:       ObjectID,              // 코멘트 ID
-  author:    UserObject,            // 작성자 정보
-  content:   String,                // 코멘트 내용
-  position:  Array<Number>,         // 코멘트가 표시될 문서 상의 위치. [시작 Index, 종료 Index] 형식.
-  createdAt: Date                   // 코멘트 작성 시각
-}
-```
-
 # TagObject
 
 ```javascript
@@ -44,6 +32,26 @@
   title: String,         // 태그 제목
   count: Number,         // 태그가 사용된 회수
   color: String          // 태그 색상. HEX 색상코드.
+}
+```
+
+# CommentObject
+
+```javascript
+{
+  _id:       ObjectID,              // 코멘트 ID
+  author:    UserObject,            // 작성자 정보
+  content:   String,                // 코멘트 내용
+  range:     RangeObject,           // 코멘트가 표시될 문서 상의 위치
+  createdAt: Date                   // 코멘트 작성 시각
+}
+```
+
+# RangeObject
+
+```javascript
+{
+
 }
 ```
 
