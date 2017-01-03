@@ -1,8 +1,11 @@
-function requireApp(filename) {
+const path = require('path');
+
+function requireApp(basePath, filename, quiet) {
 	try {
-		return require('../apps/' + filename);
+		const filepath = path.resolve(basePath, 'apps', filename);
+		return require(filepath);
 	} catch(error) {
-		if (error.code === "MODULE_NOT_FOUND") {
+		if (quiet && error.code === "MODULE_NOT_FOUND") {
 			return null;
 		} else {
 			throw error;
@@ -15,11 +18,11 @@ function routeApps(config, express, io, model) {
 		let app = null;
 		let socket = null;
 
-		if ((app = requireApp(id + '.js')) !== null) {
+		if ((app = requireApp(config.path, id + '.js', false)) !== null) {
 			app(config, express, model);
 		}
 
-		if ((socket = requireApp(id + '.socket.js')) !== null) {
+		if ((socket = requireApp(config.path, id + '.socket.js', true)) !== null) {
 			socket(config, io, model);
 		}
 	});

@@ -2,15 +2,19 @@ const extend = require('deep-extend');
 const path = require('path');
 const crypto = require('crypto');
 
-module.exports = function(_config) {
+function KokotoHttpd(_config) {
 	const config = extend({
-		service: 'timekit-httpd',
+		service: 'kokoto-httpd',
 		path: path.resolve(__dirname, '..'),
 		secret: crypto.randomBytes(32).toString('base64'),
-		db: 'mongodb://127.0.0.1/timekit',
+		db: 'mongodb://127.0.0.1/kokoto',
 		session: 'session',
-		static: false,
-		apps: []
+		apps: [
+			'user',
+			'document',
+			'tag'
+		],
+		pagination: 20
 	}, _config);
 
 	// HTTP Server 설정
@@ -72,7 +76,7 @@ module.exports = function(_config) {
 	});
 
 	// Database Model 로드
-	const Model = require('../model.js');
+	const Model = require(path.resolve(config.path, 'model.js'));
 	const model = new Model(config, mongoose);
 
 	// App. Routing 설정
@@ -80,3 +84,5 @@ module.exports = function(_config) {
 
 	return server;
 };
+
+module.exports = KokotoHttpd;

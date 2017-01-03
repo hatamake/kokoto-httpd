@@ -5,10 +5,11 @@ const fs = require('fs');
 const Jimp = require("jimp");
 
 const messages = require('../messages.json')
-const uploadDirPath = path.resolve(__dirname, '..', 'static', 'user');
-const defaultPicturePath = path.resolve(uploadDirPath, 'default.png');
 
 module.exports = function(config, express, model) {
+	const uploadDirPath = path.resolve(config.path, 'static', 'user');
+	const defaultPicturePath = path.resolve(uploadDirPath, 'default.png');
+
 	express.use(function(req, res, next) {
 		res.shouldSignin = function() {
 			if (req.user === null) {

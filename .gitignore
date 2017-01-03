@@ -1,3 +1,4 @@
 node_modules/
 static/user/*.*
 !static/user/default.png
+run.js
