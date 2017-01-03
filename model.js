@@ -37,6 +37,27 @@ function sanitizeUser(user) {
 	return result;
 }
 
+function tidyPopulation(doc, keys, callback) {
+	async.each(keys, function(key, callback) {
+		async.filter(doc[key], function(item, callback) {
+			callback(null, (item !== null));
+		}, function(error, neatValue) {
+			if (error) {
+				callback(error);
+			} else {
+				doc[key] = neatValue;
+				callback(null);
+			}
+		});
+	}, function(error) {
+		if (error) {
+			callback(error, doc);
+		} else {
+			callback(null, doc);
+		}
+	});
+}
+
 class Model {
 	constructor(config, mongoose) {
 		this.pagination = config.pagination;
@@ -240,24 +261,26 @@ class Model {
 	}
 
 	getDocument(documentId, callback) {
-		this.Document
-			.findOne({ _id: documentId })
-			.populate('author')
-			.populate('comments')
-			.populate('tags')
-			.exec(function (error, document) {
-				if (error) {
-					callback(error, null);
-				} else if (!document) {
-					callback(new Error(messages.document_not_exist), null);
-				} else {
-					document.tags = document.tags.filter(function(tag) {
-						return (tag !== null);
-					});
-
+		async.waterfall([
+			(callback) => {
+				this.Document
+					.findOne({ _id: documentId })
+					.populate('author')
+					.populate('comments')
+					.populate('tags')
+					.exec(callback);
+			},
+			(document, callback) => {
+				if (document) {
 					callback(null, document);
+				} else {
+					callback(new Error(messages.document_not_exist), null);
 				}
-			});
+			},
+			(document, callback) => {
+				tidyPopulation(document, ['comments', 'tags'], callback);
+			}
+		], callback);
 	}
 
 	getDocumentHistory(indexId, callback) {
@@ -333,23 +356,22 @@ class Model {
 			filter._id = { $gt: lastId };
 		}
 
-		this.Document
-			.find(filter)
-			.sort('-updatedAt')
-			.limit(this.pagination)
-			.populate('author')
-			.populate('tags')
-			.exec(function(error, documents) {
-				if (error) {
-					callback(error, null);
-				} else {
-					document.tags = document.tags.filter(function(tag) {
-						return (tag !== null);
-					});
-
-					callback(null, documents);
-				}
-			});
+		async.waterfall([
+			(callback) => {
+				this.Document
+					.find(filter)
+					.sort('-updatedAt')
+					.limit(this.pagination)
+					.populate('author')
+					.populate('tags')
+					.exec(callback);
+			},
+			(documents, callback) => {
+				async.map(documents, function(document, callback) {
+					tidyPopulation(document, ['tags'], callback);
+				}, callback);
+			}
+		], callback);
 	}
 
 	_addDocument(indexId, document, callback) {
