@@ -95,7 +95,7 @@ module.exports = function(config, express, model) {
 	express.post(`${config.url}/user/signup`, function(req, res) {
 		const {username, password} = req.body;
 
-		async.series([
+		async.waterfall([
 			function(callback) {
 				if (!password) {
 					callback(new Error(messages.password_required));
