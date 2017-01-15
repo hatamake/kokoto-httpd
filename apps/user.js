@@ -10,12 +10,6 @@ module.exports = function(express, io, model, config) {
 	const uploadDirPath = path.join(config.path, 'static', 'user');
 	const defaultPicturePath = path.join(uploadDirPath, 'default.png');
 
-	express.get(`${config.url}/user`, function(req, res) {
-		if (!res.shouldSignin()) {
-			res.jsonAuto({ user: req.session.user });
-		}
-	});
-
 	express.post(`${config.url}/user`, function(req, res) {
 		const {username, password} = req.body;
 
@@ -30,7 +24,59 @@ module.exports = function(express, io, model, config) {
 		});
 	});
 
-	express.put(`${config.url}/user`, function(req, res) {
+	express.get(`${config.url}/user/:id`, function(req, res) {
+		let id = req.params.id;
+
+		if (id === 'me') {
+			if (res.shouldSignin()) {
+				return;
+			}
+
+			id = req.session.user.id;
+		}
+
+		res.jsonAuto({
+			error: null,
+			user: req.session.user
+		});
+	});
+
+	express.get(`${config.url}/user/:id/picture`, function(req, res) {
+		let id = req.params.id;
+
+		if (id === 'me') {
+			if (res.shouldSignin()) {
+				return;
+			}
+
+			id = req.session.user.id;
+		}
+
+		async.waterfall([
+			function(callback) {
+				if (id) {
+					res.sendFile(path.join(uploadDirPath, `${id}.png`), function(error) {
+						callback(null, !!error);
+					});
+				} else {
+					callback(null, true);
+				}
+			},
+			function(useDefault, callback) {
+				if (useDefault) {
+					res.sendFile(defaultPicturePath, callback);
+				} else {
+					callback(null);
+				}
+			}
+		], function(error) {
+			if (error) {
+				res.jsonAuto({ error: error });
+			}
+		});
+	});
+
+	express.put(`${config.url}/user/me`, function(req, res) {
 		if (res.shouldSignin()) { return; }
 
 		async.waterfall([
@@ -102,7 +148,7 @@ module.exports = function(express, io, model, config) {
 		});
 	});
 
-	express.delete(`${config.url}/user`, function(req, res) {
+	express.delete(`${config.url}/user/me`, function(req, res) {
 		if (res.shouldSignin()) { return; }
 
 		async.parallel([
@@ -114,64 +160,6 @@ module.exports = function(express, io, model, config) {
 			}
 		], function(error) {
 			res.jsonAuto({ error: error });
-		});
-	});
-
-	express.post(`${config.url}/user/signin`, function(req, res) {
-		const {username, password} = req.body;
-
-		model.authUser(username, password, function(error, user) {
-			if (!error && user) {
-				req.session.user = user;
-			}
-
-			res.jsonAuto({
-				error: error,
-				user: user
-			});
-		});
-	});
-
-	express.get(`${config.url}/user/signout`, function(req, res) {
-		if (res.shouldSignin()) { return; }
-
-		req.session.destroy(function(error) {
-			res.jsonAuto({ error: error })
-		});
-	});
-
-	express.get(`${config.url}/user/picture`, function(req, res) {
-		let id;
-
-		if (req.query.id) {
-			id = req.query.id;
-		} else if (req.session.user) {
-			id = req.session.user.id;
-		} else {
-			id = null;
-		}
-
-		async.waterfall([
-			function(callback) {
-				if (id) {
-					res.sendFile(path.join(uploadDirPath, `${id}.png`), function(error) {
-						callback(null, !!error);
-					});
-				} else {
-					callback(null, true);
-				}
-			},
-			function(useDefault, callback) {
-				if (useDefault) {
-					res.sendFile(defaultPicturePath, callback);
-				} else {
-					callback(null);
-				}
-			}
-		], function(error) {
-			if (error) {
-				res.jsonAuto({ error: error });
-			}
 		});
 	});
 };

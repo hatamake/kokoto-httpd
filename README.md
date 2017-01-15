@@ -1,10 +1,11 @@
 # kokoto-httpd
 
-Backend pseudo-RESTful API server for [Kokoto](https://github.com/hatamake/kokoto)
+RESTful API server for [Kokoto](https://github.com/hatamake/kokoto)
 
 ## Installation
 
-This package is not published on NPM registry. You have to manually clone and install the dependencies.
+This package is not published on NPM registry.
+You have to manually clone and install the dependencies.
 
 ```bash
 npm install git+https://github.com/hatamake/kokoto-httpd.git
@@ -17,9 +18,9 @@ npm install git+https://github.com/hatamake/kokoto-httpd.git
 ```javascript
 const KokotoHttpd = require('kokoto-httpd');
 
-const server = KokotoHttpd({
+const server = new KokotoHttpd({
 	url: '/api',
-	secret: 'Secret Key Phrase',
+	secret: 'OPF:sM{R9AQTZ051v5odT3X`%h+hRe',
 	database: {
 		persist: 'mysql://127.0.0.1:3306/db-name',
 		cache: 'redis://127.0.0.1:6379/0'
@@ -29,53 +30,36 @@ const server = KokotoHttpd({
 server.listen(8000);
 ```
 
-### Instantiate: `new KokotoHttpd(options)`
-
-* options: Options for running server.
-	- options.path:
-	  A path to working directory where `static/` exists
-	  (Default: The path to the package root)
-
-	- options.url:
-	  A url prefix of the built-in apps without trailing slash
-	  (Default: `''`)
-
-	- options.secret:
-	  A secret key phrase for encrypting sessions
-	  (Default: A 44-length random [String](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String))
-
-	- options.database.persist:
-	  A full database URI or an array of arguments passed to the [Sequelize constructor](http://sequelize.readthedocs.io/en/latest/api/sequelize/#class-sequelize)
-	  (Default: `[]`)
-
-	- options.database.cache:
-	  The URL of the Redis server or an array of arguments passed to [`redis.createServer()`](https://github.com/NodeRedis/node_redis#rediscreateclient)
-	  (Default: `[]`)
-
-	- options.session:
-	  A cookie field name for storing session ID
-	  (Default: `'session'`)
-
-	- options.plugins:
-	  An array of [plugin module](/docs/plugin.md)s.
-	  (Default: `[]`)
-
-	- options.pagination:
-	  A count of items displayed in each page
-	  (Default: `20`)
-
-### Properties
-
-This main class, the entry point to `kokoto-httpd` inherits [Node.js http.Server](https://nodejs.org/api/http.html#http_class_http_server).
-You can use every property `http.Server` implements, which includes `server.listen()`, `server.close()`, `connect` event, etc.
-
 ### REST API Reference
 
-See [API Reference](/docs/api.md).
+See [REST API Reference](/docs/rest.md).
+
+### Class: KokotoHttpd
+
+#### new KokotoHttpd([options])
+
+Instantiate API server with following options.
+
+ Key                        | Default                      | Description
+----------------------------|------------------------------|-------------
+ [options.path]             | The path to the package root | A path to working directory where `static/` exists |
+ [options.url]              | `''`                         | A url prefix of the built-in apps *without* trailing slashes
+ [options.secret]           | A random string of 44 chars  | A key phrase for encrypting sessions
+ [options.database.persist] | `[]`                         | A full database URI *or* an array of arguments passed to the [Sequelize constructor](http://sequelize.readthedocs.io/en/latest/api/sequelize/#class-sequelize)
+ [options.database.cache]   | `[]`                         | The URL of the Redis server *or* an array of arguments passed to [`redis.createServer()`](https://github.com/NodeRedis/node_redis#rediscreateclient)
+ [options.session]          | `'session'`                  | A cookie field name for storing session ID
+ [options.plugins]          | `[]`                         | An array of [plugin module](/docs/plugin.md)s.
+ [options.pagination]       | `20`                         | A count of items displayed in each page
+
+#### Properties
+
+This class extends [Node.js http.Server](https://nodejs.org/api/http.html#http_class_http_server).
+You can use every property `http.Server` implements ─ including `close` event, `server.listen()` or `server.close([callback])` etc..
 
 ## License
 
-Kokoto is licensed under the MIT License. See [LICENSE](/LICENSE) and [NOTICE](/NOTICE) for full license text.
+kokoto-httpd is licensed under the MIT License.
+See [LICENSE](/LICENSE) and [NOTICE](/NOTICE) for full license text.
 
 ```
 MIT License
