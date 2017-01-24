@@ -7,7 +7,8 @@ module.exports = function(express, io, model, config) {
 				data.error = {
 					name: data.error.name,
 					message: data.error.message,
-					stack: (config.debug ? data.error.stack : null)
+					stack: (config.debug ? data.error.stack : null),
+					status: data.error.status
 				};
 
 				res.status((data.error.status || 500));

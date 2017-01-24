@@ -22,7 +22,6 @@ module.exports = function(express, io, model, config) {
 				error.status = 403;
 
 				res.jsonAuto({ error: error });
-
 				return true;
 			}
 

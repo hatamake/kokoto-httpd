@@ -125,7 +125,7 @@ class KokotoModel {
 				[(lastId || -1), this.config.pagination],
 				null
 			)
-			.map((document) => {
+			.map(function(document) {
 				return document.finalize(null);
 			});
 
