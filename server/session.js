@@ -1,18 +1,24 @@
 const session = require('express-session');
-const RedisStore = require('connect-redis')(session);
-
 const messages = require('../static/messages.json');
 
 module.exports = function(express, io, model, config) {
-	const middleware = session({
-		store: new RedisStore({
-			client: model.cache.client
-		}),
-		secret: config.secret,
-		name: config.session.name,
-		resave: false,
-		saveUninitialized: false
-	});
+	const options = (function(cacheConfig) {
+		const result = {
+			secret: config.secret,
+			name: config.session.name,
+			resave: false,
+			saveUninitialized: false
+		};
+
+		if (cacheConfig) {
+			const RedisStore = require('connect-redis')(session);
+			result.store = new RedisStore({ client: model.cache.client });
+		}
+
+		return result;
+	})(config.database.cache)
+
+	const middleware = session(options);
 
 	express.use(middleware);
 	express.use(function(req, res, next) {

@@ -14,8 +14,8 @@ const defaultConfig = {
 	url: '',
 	secret: crypto.randomBytes(32).toString('base64'),
 	database: {
-		persist: [],
-		cache: []
+		persist: 'mysql://127.0.0.1:3306/kokoto',
+		cache: null
 	},
 	session: 'session',
 	plugins: [],

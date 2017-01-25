@@ -14,5 +14,6 @@
     "title_exist": "이미 존재하는 제목입니다.",
     "color_invalid": "올바르지 않은 색상입니다.",
     "request_invalid": "올바르지 않은 요청입니다.",
-    "comment_not_exist": "댓글이 존재하지 않습니다."
+    "comment_not_exist": "댓글이 존재하지 않습니다.",
+    "cache_not_configured": "캐시 서버가 설정되지 않았습니다."
 }

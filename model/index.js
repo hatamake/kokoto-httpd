@@ -156,7 +156,9 @@ class KokotoModel {
 	searchTag(query, lastId, callback) {
 		async.waterfall([
 			(callback) => {
-				this.cache.loadTagSearch(query, callback);
+				this.cache.loadTagSearch(query, function(error, cachedTags) {
+					callback(null, cachedTags);
+				});
 			},
 			(cachedTags, callback) => {
 				if (cachedTags) {
@@ -164,12 +166,12 @@ class KokotoModel {
 					return;
 				}
 
-				const promise = this.persist
+				this.persist
 					.searchTag(query, [(lastId || -1), this.config.pagination], null)
 					.map(function(tag) {
 						return tag.finalize(null);
 					})
-					.then(function(tags) {
+					.then((tags) => {
 						callback(null, tags);
 						this.cache.saveTagSearch(query, tags);
 					})

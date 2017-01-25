@@ -1,21 +1,27 @@
 const _ = require('lodash');
 const redis = require('redis');
 
+const messages = require('../static/messages.json')
+
 class CacheModel {
 	constructor(cacheConfig) {
-		if (_.isArray(cacheConfig)) {
-			this.client = redis.createClient.apply(redis, cacheConfig);
+		if (cacheConfig) {
+			if (_.isArray(cacheConfig)) {
+				this.client = redis.createClient.apply(redis, cacheConfig);
+			} else {
+				this.client = redis.createClient(cacheConfig);
+			}
 		} else {
-			this.client = redis.createClient(cacheConfig);
+			this.client = null;
 		}
 	}
 
 	saveDocument(document, callback) {
-		this.client.hset('document', document.id, JSON.stringify(document), callback);
+		this.do('hset', 'document', document.id, JSON.stringify(document), callback);
 	}
 
 	loadDocument(id, callback) {
-		this.client.hget('document', id, function(error, document) {
+		this.do('hget', 'document', id, function(error, document) {
 			if (error) {
 				callback(error, null);
 			} else {
@@ -25,15 +31,19 @@ class CacheModel {
 	}
 
 	clearDocument(callback) {
-		this.client.del('document', callback);
+		this.do('del', 'document', callback);
 	}
 
 	saveTagSearch(query, tags, callback) {
-		this.client.hset('tags', query, JSON.stringify(tags), callback);
+		this.do('hset', 'tags', query, JSON.stringify(tags), callback);
 	}
 
 	loadTagSearch(query, callback) {
-		this.client.hget('tags', tags, function(error, tags) {
+		if (!query) {
+			query = '';
+		}
+
+		this.do('hget', 'tags', query, function(error, tags) {
 			if (error) {
 				callback(error, null);
 			} else {
@@ -43,7 +53,19 @@ class CacheModel {
 	}
 
 	clearTagSearch(callback) {
-		this.client.del('tags', callback);
+		this.do('del', 'tags', callback);
+	}
+
+	do(method, ...args) {
+		if (this.client === null) {
+			const callback = _.last(args);
+
+			if (_.isFunction(callback)) {
+				callback(new Error(messages.cache_not_configured));
+			}
+		} else {
+			this.client[method].apply(this.client, args);
+		}
 	}
 }
 
