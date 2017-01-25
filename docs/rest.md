@@ -34,7 +34,7 @@ Removes current session and sign out.
 
 ### POST /user
 
-Creates new user.
+Creates new user, and process sign-in with the new user.
 
 #### Request
 

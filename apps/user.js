@@ -17,6 +17,10 @@ module.exports = function(express, io, model, config) {
 			username: username,
 			password: password
 		}, function(error, user) {
+			if (!error) {
+				req.session.user = user;
+			}
+
 			res.jsonAuto({
 				error: error,
 				user: user
