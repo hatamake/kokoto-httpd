@@ -147,61 +147,84 @@ class KokotoModel {
 	}
 
 	archiveDocument(id, callback) {
-		this.doAndClearDocumentCache(
+		this.doWithTrx(
 			this.persist.archiveDocument, id,
-			document => document.id,
 			callback
 		);
 	}
 
 	searchTag(query, lastId, callback) {
-		const promise = this.persist
-			.searchTag(query, [(lastId || -1), this.config.pagination], null)
-			.map(function(tag) {
-				return tag.finalize(null);
-			});
+		async.waterfall([
+			(callback) => {
+				this.cache.loadTagSearch(query, callback);
+			},
+			(cachedTags, callback) => {
+				if (cachedTags) {
+					callback(null, cachedTags);
+					return;
+				}
 
-		promiseToCallback(promise, callback);
+				const promise = this.persist
+					.searchTag(query, [(lastId || -1), this.config.pagination], null)
+					.map(function(tag) {
+						return tag.finalize(null);
+					})
+					.then(function(tags) {
+						callback(null, tags);
+						this.cache.saveTagSearch(query, tags);
+					})
+					.catch(function(error) {
+						callback(error, null);
+					});
+			}
+		], callback);
 	}
 
 	updateTag(id, tag, callback) {
-		this.doAndClearDocumentCache(
+		this.doWithTrx(
 			this.persist.updateTag, id, tag,
-			tag => tag.DocumentToTag.DocumentId,
 			callback
 		);
+
+		this.cache.clearDocument();
+		this.cache.clearTagSearch();
 	}
 
 	removeTag(id, callback) {
-		this.doAndClearDocumentCache(
+		this.doWithTrx(
 			this.persist.removeTag, id,
-			tag => tag.DocumentToTag.DocumentId,
 			callback
 		);
+
+		this.cache.clearDocument();
+		this.cache.clearTagSearch();
 	}
 
 	addComment(documentId, comment, callback) {
-		this.doAndClearDocumentCache(
+		this.doWithTrx(
 			this.persist.addComment, documentId, comment,
-			comment => comment.documentId,
 			callback
 		);
+
+		this.cache.clearDocument();
 	}
 
 	updateComment(id, comment, callback) {
-		this.doAndClearDocumentCache(
+		this.doWithTrx(
 			this.persist.updateComment, id, comment,
-			comment => comment.documentId,
 			callback
 		);
+
+		this.cache.clearDocument();
 	}
 
 	removeComment(id, callback) {
-		this.clearDocumentCache(
+		this.doWithTrx(
 			this.persist.removeComment, id,
-			comment => comment.documentId,
 			callback
 		);
+
+		this.cache.clearDocument();
 	}
 
 	doWithoutTrx(method, ...args) {
@@ -222,28 +245,6 @@ class KokotoModel {
 
 			return method.apply(this.persist, args).then(function(result) {
 				return result.finalize(null);
-			});
-		});
-
-		promiseToCallback(promise, callback);
-	}
-
-	doAndClearDocumentCache(persistMethod, ...args) {
-		const callback = args.pop();
-		const toId = args.pop();
-
-		const promise = this.persist.client.transaction((trx) => {
-			args.push(trx);
-
-			return persistMethod.apply(this.persist, args).then((result) => {
-				const documentId = toId(result);
-
-				let clearDocumentCache = this.cache.clearDocument.bind(this.cache, documentId);
-				clearDocumentCache = callbackToPromise(clearDocumentCache);
-
-				return clearDocumentCache.then(function() {
-					return result.finalize(null);
-				});
 			});
 		});
 

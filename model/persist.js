@@ -3,6 +3,7 @@ const Promise = require('bluebird');
 const Sequelize = require('sequelize');
 const crypto = require('crypto');
 const uuid = require('uuid/v4');
+const Hangul = require('hangul-js');
 
 const messages = require('../static/messages.json');
 
@@ -29,6 +30,19 @@ function sanitize(data, include, exclude) {
 	});
 
 	return result;
+}
+
+function isCompleteChar(char) {
+	if (char.match(/[ㄱ-ㅎㅏ-ㅣ가-힣]/)) {
+		if (Hangul.endsWithConsonant(char)) {
+			const lastSound = _.last(Hangul.disassemble(lastChar));
+			return (['ㄱ', 'ㄴ', 'ㄹ', 'ㅂ'].indexOf(lastSound) >= 0);
+		} else {
+			return true;
+		}
+	} else {
+		return false;
+	}
 }
 
 class PersistModel {
@@ -473,9 +487,42 @@ class PersistModel {
 	}
 
 	searchTag(query, pagination, trx) {
+		if (!query) {
+			return this.Tag.findAll();
+		}
+
+		let lastChar = query.substr(-1);
+
+		if (isCompleteChar(lastChar)) {
+			query = query.substr(0, query.length - 1);
+		} else {
+			lastChar = null;
+		}
+
 		return this.Tag
 			.findAll({
+				where: {
+					title: { $like: `%${query}%` },
+					id: { $gt: pagination[0] }
+				},
+				order: [['title', 'ASC']],
+				limit: pagination[1],
+				transaction: trx
 			})
+			.filter(function(tag) {
+				if (lastChar === null) {
+					return true;
+				}
+				
+				const queryIndex = tag.title.indexOf(query);
+				const charAfterQuery = tag.title.substr(queryIndex + 1, 1);
+				
+				if (charAfterQuery) {
+					return Hangul.search(charAfterQuery, lastChar);
+				} else {
+					return false;
+				}
+			});
 	}
 
 	updateTag(id, tag, trx) {
