@@ -11,7 +11,7 @@ module.exports = function(express, io, model, config) {
 					status: data.error.status
 				};
 
-				res.status((data.error.status || 500));
+				res.status(data.error.status || 500);
 			}
 
 			res.json(data);

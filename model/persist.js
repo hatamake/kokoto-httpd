@@ -70,7 +70,7 @@ class PersistModel {
 
 		this.Document = this.client.define('Document', {
 			historyId: {
-				type: Sequelize.INTEGER,
+				type: Sequelize.STRING,
 				allowNull: false,
 				defaultValue: uuid
 			},
@@ -472,8 +472,10 @@ class PersistModel {
 			});
 	}
 
-	searchTag(query, lastId, trx) {
-		return Promise.reject(new Error('Not implemented yet'));
+	searchTag(query, pagination, trx) {
+		return this.Tag
+			.findAll({
+			})
 	}
 
 	updateTag(id, tag, trx) {

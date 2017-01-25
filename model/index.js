@@ -155,10 +155,13 @@ class KokotoModel {
 	}
 
 	searchTag(query, lastId, callback) {
-		this.doWithoutTrx(
-			this.persist.searchTag, query, lastId,
-			callback
-		);
+		const promise = this.persist
+			.searchTag(query, [(lastId || -1), this.config.pagination], null)
+			.map(function(tag) {
+				return tag.finalize(null);
+			});
+
+		promiseToCallback(promise, callback);
 	}
 
 	updateTag(id, tag, callback) {
