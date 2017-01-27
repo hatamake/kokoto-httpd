@@ -1,7 +1,7 @@
 const session = require('express-session');
 const messages = require('../static/messages.json');
 
-module.exports = function(express, io, model, config) {
+module.exports = function(express, model, config) {
 	const options = (function(cacheConfig) {
 		const result = {
 			secret: config.secret,
@@ -35,9 +35,5 @@ module.exports = function(express, io, model, config) {
 		};
 
 		next();
-	});
-
-	io.use(function(socket, next) {
-		middleware(socket.request, socket.request.res, next);
 	});
 };

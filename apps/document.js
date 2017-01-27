@@ -1,6 +1,6 @@
 const async = require('async');
 
-module.exports = function(express, io, model, config) {
+module.exports = function(express, model, config) {
 	express.post(`${config.url}/document`, function(req, res) {
 		if (res.shouldSignin()) { return; }
 

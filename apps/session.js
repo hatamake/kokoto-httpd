@@ -1,4 +1,4 @@
-module.exports = function(express, io, model, config) {
+module.exports = function(express, model, config) {
 	express.put(`${config.url}/session`, function(req, res) {
 		const {username, password} = req.body;
 

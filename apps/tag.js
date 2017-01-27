@@ -1,4 +1,4 @@
-module.exports = function(express, io, model, config) {
+module.exports = function(express, model, config) {
 	express.get(`${config.url}/tag/search`, function(req, res) {
 		const {query, after} = req.query;
 

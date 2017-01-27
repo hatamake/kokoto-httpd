@@ -1,6 +1,6 @@
 const _ = require('lodash');
 
-module.exports = function(express, io, model, config) {
+module.exports = function(express, model, config) {
 	express.use(function(req, res, next) {
 		res.jsonAuto = function(data) {
 			if (_.isError(data.error)) {

@@ -3,7 +3,6 @@ const path = require('path');
 const crypto = require('crypto');
 const http = require('http');
 const express = require('express');
-const io = require('socket.io');
 const util = require('util');
 
 const KokotoModel = require('../model');
@@ -31,7 +30,6 @@ class KokotoHttpd extends http.Server {
 		super(_express);
 
 		this.express = _express;
-		this.io = io(this);
 
 		this.config = _.merge(defaultConfig, config);
 
@@ -43,7 +41,7 @@ class KokotoHttpd extends http.Server {
 
 			middlewares.forEach((name) => {
 				const middleware = require(`./${name}.js`);
-				middleware(this.express, this.io, this.model, this.config);
+				middleware(this.express, this.model, this.config);
 			});
 
 			console.log(util.format(messages.server_ready, 'kokoto-httpd'));

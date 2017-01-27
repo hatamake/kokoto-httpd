@@ -1,4 +1,4 @@
-module.exports = function(express, io, model, config) {
+module.exports = function(express, model, config) {
 	express.post(`${config.url}/comment`, function(req, res) {
 		if (res.shouldSignin()) { return; }
 

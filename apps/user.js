@@ -6,7 +6,7 @@ const Jimp = require("jimp");
 
 const messages = require('../static/messages.json');
 
-module.exports = function(express, io, model, config) {
+module.exports = function(express, model, config) {
 	const uploadDirPath = path.join(config.path, 'static', 'user');
 	const defaultPicturePath = path.join(uploadDirPath, 'default.png');
 
