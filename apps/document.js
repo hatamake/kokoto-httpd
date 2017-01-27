@@ -30,9 +30,8 @@ module.exports = function(express, io, model, config) {
 
 	express.get(`${config.url}/document/:id`, function(req, res) {
 		const id = req.params.id;
-		const parsed = !!req.query.parsed;
 
-		model.getDocument(id, parsed, function(error, document) {
+		model.getDocument(id, function(error, document) {
 			res.jsonAuto({
 				error: error,
 				document: document

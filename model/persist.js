@@ -4,6 +4,7 @@ const Sequelize = require('sequelize');
 const crypto = require('crypto');
 const uuid = require('uuid/v4');
 const Hangul = require('hangul-js');
+const Parser = require('kokoto-parser');
 
 const messages = require('../static/messages.json');
 
@@ -109,6 +110,15 @@ class PersistModel {
 				},
 				set: function(value) {
 					this.setDataValue('content', notBlank(value) ? value : '');
+				}
+			},
+			parsedContent: {
+				type: Sequelize.TEXT,
+				validate: {
+					notEmpty: { msg: messages.content_required }
+				},
+				set: function(value) {
+					this.setDataValue('parsedContent', notBlank(value) ? value : '');
 				}
 			}
 		}, {
@@ -235,8 +245,7 @@ class PersistModel {
 	}
 
 	sync(force) {
-		return this.client
-			.sync({ force: force });
+		return this.client.sync({ force: force });
 	}
 
 	getUser(id, trx) {
@@ -405,22 +414,35 @@ class PersistModel {
 	}
 
 	addDocument(document, trx) {
-		return this.Document
-			.create(sanitize(document, ['historyId', 'title', 'content']), {
-				transaction: trx
-			})
-			.then((createdDocument) => {
-				return Promise.all([
-					createdDocument.setAuthor(document.authorId, { transaction: trx }),
-
-					Promise.map(document.tags, (tag) => {
-						return this.increaseOrAddTag(tag, trx);
-					}).then(function(tags) {
-						return createdDocument.setTags(tags, { transaction: trx });
-					})
-				])
-				.thenReturn(createdDocument);
+		return new Promise(function(resolve, reject) {
+			Parser.render(document.content, function(error, parsedContent) {
+				if (error) {
+					reject(error);
+				} else {
+					resolve(parsedContent);
+				}
 			});
+		})
+		.then((parsedContent) => {
+			document.parsedContent = parsedContent;
+
+			return this.Document
+				.create(sanitize(document, ['historyId', 'title', 'content', 'parsedContent']), {
+					transaction: trx
+				})
+				.then((createdDocument) => {
+					return Promise.all([
+						createdDocument.setAuthor(document.authorId, { transaction: trx }),
+
+						Promise.map(document.tags, (tag) => {
+							return this.increaseOrAddTag(tag, trx);
+						}).then(function(tags) {
+							return createdDocument.setTags(tags, { transaction: trx });
+						})
+					])
+					.thenReturn(createdDocument);
+				});
+		});
 	}
 
 	updateDocument(id, document, trx) {

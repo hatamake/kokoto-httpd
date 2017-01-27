@@ -85,7 +85,7 @@ class KokotoModel {
 		);
 	}
 
-	getDocument(id, needParse, callback) {
+	getDocument(id, callback) {
 		async.waterfall([
 			(callback) => {
 				this.cache.loadDocument(id, function(error, cachedDocument) {
@@ -105,15 +105,6 @@ class KokotoModel {
 					});
 
 				promiseToCallback(promise, callback);
-			},
-			(document, callback) => {
-				if (needParse && !document.parsedConetnt) {
-					callback(null, document);
-					this.cache.saveDocument(document);
-					return;
-				}
-
-				callback(null, document);
 			}
 		], callback);
 	}
