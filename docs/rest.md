@@ -1,5 +1,24 @@
 # REST API Reference
 
+## /site
+
+### GET /site/:key
+
+Fetches the value of `config.site` by its key.
+
+### Request
+
+   Key      | Default | Description  
+  ----------|---------|--------------
+   :key     |         | The key of the value
+
+### Response
+
+   Key      | Description
+  ----------|-------------
+   error    | [ErrorObject](object.md#errorobject)
+   result   | The requested value
+
 ## /session
 
 ### PUT /session

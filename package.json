@@ -28,10 +28,10 @@
     "formidable": "^1.0.17",
     "hangul-js": "^0.2.2",
     "jimp": "^0.2.27",
+    "koto-parser": "^0.1.2",
     "lodash": "^4.17.2",
     "marked": "^0.3.6",
     "redis": "^2.6.4",
-    "sequelize": "^3.29.0",
-    "kokoto-parser": "git+https://github.com/hatamake/kokoto-parser.git"
+    "sequelize": "^3.29.0"
   }
 }

@@ -42,14 +42,16 @@ Instantiate API server with following options.
 
  Key                        | Default                      | Description
 ----------------------------|------------------------------|-------------
- [options.path]             | The path to the package root | A path to working directory where `static/` exists |
+ [options.path]             | The path to the package root | A path to working directory where `static/` exists
  [options.url]              | `''`                         | A url prefix of the built-in apps *without* trailing slashes
  [options.secret]           | A random string of 44 chars  | A key phrase for encrypting sessions
+ [options.session]          | `'session'`                  | A cookie field name for storing session ID
  [options.database.persist] | `[]`                         | A full database URI *or* an array of arguments passed to the [Sequelize constructor](http://sequelize.readthedocs.io/en/latest/api/sequelize/#class-sequelize)
  [options.database.cache]   | `[]`                         | The URL of the Redis server *or* an array of arguments passed to [`redis.createServer()`](https://github.com/NodeRedis/node_redis#rediscreateclient)
- [options.session]          | `'session'`                  | A cookie field name for storing session ID
- [options.plugins]          | `[]`                         | An array of [plugin module](/docs/plugin.md)s.
- [options.pagination]       | `20`                         | A count of items displayed in each page
+ [options.site.name]        | `'Kokoto'`                   | The name of the site
+ [options.site.pagination]  | `20`                         | A count of items displayed in each page
+ [options.plugins]          | `[]`                         | An array of [plugin module](/docs/plugin.md)s
+ [options.debug]            | `false`                      | Whether the call stack is included in [ErrorObject](/docs/object.md#errorobject)
 
 #### Properties
 

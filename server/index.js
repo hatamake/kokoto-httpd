@@ -12,13 +12,16 @@ const defaultConfig = {
 	path: path.join(__dirname, '..'),
 	url: '',
 	secret: crypto.randomBytes(32).toString('base64'),
+	session: 'session',
+	plugins: [],
 	database: {
 		persist: 'mysql://127.0.0.1:3306/kokoto',
 		cache: null
 	},
-	session: 'session',
-	plugins: [],
-	pagination: 20,
+	site: {
+		name: 'Kokoto',
+		pagination: 20
+	},
 	debug: false
 };
 

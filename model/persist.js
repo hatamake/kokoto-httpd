@@ -4,7 +4,7 @@ const Sequelize = require('sequelize');
 const crypto = require('crypto');
 const uuid = require('uuid/v4');
 const Hangul = require('hangul-js');
-const Parser = require('kokoto-parser');
+const Parser = require('koto-parser');
 
 const messages = require('../static/messages.json');
 
@@ -410,7 +410,19 @@ class PersistModel {
 	}
 
 	searchDocumentByText(text, pagination, trx) {
-		return Promise.reject(new Error('Not implemented yet'));
+		return this.Document
+			.findAll({
+				where: {
+					$or: [
+						{ title: { $like: `%${text}%` } },
+						{ content: { $like: `%${text}%` } },
+					],
+					id: { $gt: pagination[0] }
+				},
+				order: [['updatedAt', 'DESC']],
+				limit: pagination[1],
+				transaction: trx
+			});
 	}
 
 	addDocument(document, trx) {
@@ -513,7 +525,7 @@ class PersistModel {
 			return this.Tag.findAll();
 		}
 
-		let lastChar = query.substr(-1);
+		let lastChar = query.substr(query.length - 1, 1);
 
 		if (isCompleteChar(lastChar)) {
 			query = query.substr(0, query.length - 1);

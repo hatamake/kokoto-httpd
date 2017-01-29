@@ -113,7 +113,7 @@ class KokotoModel {
 		const promise = this.persist
 			.searchDocument(
 				type, query,
-				[(lastId || -1), this.config.pagination],
+				[(lastId || -1), this.config.site.pagination],
 				null
 			)
 			.map(function(document) {
@@ -158,7 +158,11 @@ class KokotoModel {
 				}
 
 				this.persist
-					.searchTag(query, [(lastId || -1), this.config.pagination], null)
+					.searchTag(
+						query,
+						[(lastId || -1), this.config.site.pagination],
+						null
+					)
 					.map(function(tag) {
 						return tag.finalize(null);
 					})
