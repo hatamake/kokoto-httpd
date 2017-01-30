@@ -29,8 +29,8 @@ Processes sign-in with provided user information.
 
    Key      | Default | Description  
   ----------|---------|--------------
-   username |         | The username 
-   password |         | The password 
+   id       |         | The user id
+   password |         | The user password
 
 #### Response
 
@@ -59,8 +59,9 @@ Creates new user, and process sign-in with the new user.
 
    Key      | Default | Description
   ----------|---------|--------------
-   username |         | The new username
-   password |         | The new password
+   id       |         | The new user id
+   password |         | The new user password
+   name     |         | The new user name
 
 #### Response
 
@@ -108,8 +109,8 @@ Updates user information of currently signed in user.
 
    Key        | Default | Description
   ------------|---------|--------------
-   [username] |         | The new username. Keep existing username, if omitted.
    [password] |         | The new password. Keep existing password, if omitted.
+   [name]     |         | The new user name. Keep existing name, if omitted.
    [picture]  |         | The new profile picture. Keep existing picture, if omitted.
 
 #### Response

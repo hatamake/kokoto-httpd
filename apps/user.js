@@ -11,11 +11,12 @@ module.exports = function(express, model, config) {
 	const defaultPicturePath = path.join(uploadDirPath, 'default.png');
 
 	express.post(`${config.url}/user`, function(req, res) {
-		const {username, password} = req.body;
+		const {id, password, name} = req.body;
 
 		model.addUser({
-			username: username,
-			password: password
+			id: id,
+			password: password,
+			name: name
 		}, function(error, user) {
 			if (!error) {
 				req.session.user = user;
@@ -31,17 +32,23 @@ module.exports = function(express, model, config) {
 	express.get(`${config.url}/user/:id`, function(req, res) {
 		let id = req.params.id;
 
-		if (id === 'me') {
-			if (res.shouldSignin()) {
-				return;
+		(function(callback) {
+			if (id === 'me') {
+				if (res.shouldSignin()) {
+					callback(null, null, true);
+				} else {
+					callback(null, req.session.user, false);
+				}
+			} else {
+				model.getUser(id, callback);
 			}
-
-			id = req.session.user.id;
-		}
-
-		res.jsonAuto({
-			error: null,
-			user: req.session.user
+		})(function(error, user, sent) {
+			if (!sent) {
+				res.jsonAuto({
+					error: error,
+					user: user
+				});
+			}
 		});
 	});
 
@@ -126,20 +133,6 @@ module.exports = function(express, model, config) {
 						callback(null, fields);
 					}
 				], callback);
-			},
-			function(fields, callback) {
-				const user = {};
-				const {username, password} = fields;
-
-				if (username) {
-					user.username = username;
-				}
-
-				if (password) {
-					user.password = password;
-				}
-
-				callback(null, user);
 			},
 			function(user, callback) {
 				model.updateUser(req.session.user.id, user, callback);

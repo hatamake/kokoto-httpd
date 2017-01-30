@@ -54,9 +54,9 @@ class KokotoModel {
 		promiseToCallback(promise, callback);
 	}
 
-	authUser(username, password, callback) {
+	authUser(id, password, callback) {
 		const promise = this.persist
-			.authUser(username, password, null)
+			.authUser(id, password, null)
 			.then(function(user) {
 				return user.finalize(null);
 			});

@@ -1,8 +1,8 @@
 module.exports = function(express, model, config) {
 	express.put(`${config.url}/session`, function(req, res) {
-		const {username, password} = req.body;
+		const {id, password} = req.body;
 
-		model.authUser(username, password, function(error, user) {
+		model.authUser(id, password, function(error, user) {
 			if (!error && user) {
 				req.session.user = user;
 			}

@@ -4,9 +4,9 @@
 
 ```javascript
 {
-  id: Number,
-  username: String,                      // A username should be 4-20 characters using only A-Z, a-z, 0-9, or _.
+  id:       String,                      // A user id should be 4-20 characters using only A-Z, a-z, 0-9, or _.
   password: String                       // A hashed user password
+  name:     String
 }
 ```
 

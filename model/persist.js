@@ -56,13 +56,17 @@ class PersistModel {
 		}
 
 		this.User = this.client.define('User', {
-			username: {
+			id: {
 				type: Sequelize.STRING,
-				unique: true,
+				primaryKey: true,
 				validate: {
 					is: {
 						args: /^[a-zA-Z0-9_]{4,20}$/,
-						msg: messages.username_invalid
+						msg: messages.user_id_invalid
+					},
+					notIn: {
+						args: [['me']],
+						msg: messages.user_id_exist
 					}
 				}
 			},
@@ -80,6 +84,9 @@ class PersistModel {
 
 					this.setDataValue('password', value);
 				}
+			},
+			name: {
+				type: Sequelize.STRING
 			}
 		});
 
@@ -260,11 +267,11 @@ class PersistModel {
 			});
 	}
 
-	authUser(username, password, trx) {
+	authUser(id, password, trx) {
 		return this.User
 			.findOne({
 				where: {
-					username: username,
+					id: id,
 					password: shasum(password)
 				},
 				transaction: trx
@@ -280,11 +287,11 @@ class PersistModel {
 
 	addUser(user, trx) {
 		return this.User
-			.create(sanitize(user, null, ['id']), {
+			.create(sanitize(user, ['id', 'password', 'name']), {
 				transaction: trx
 			})
 			.catch(Sequelize.UniqueConstraintError, function(error) {
-				error.message = messages.username_exist;
+				error.message = messages.id_exist;
 				throw error;
 			});
 	}
