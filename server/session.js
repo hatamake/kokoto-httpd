@@ -18,9 +18,8 @@ module.exports = function(express, model, config) {
 		return result;
 	})(config.database.cache)
 
-	const middleware = session(options);
+	express.use(session(options));
 
-	express.use(middleware);
 	express.use(function(req, res, next) {
 		res.shouldSignin = function() {
 			if (!req.session || !req.session.user) {

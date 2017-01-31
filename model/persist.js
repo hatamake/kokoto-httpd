@@ -86,7 +86,13 @@ class PersistModel {
 				}
 			},
 			name: {
-				type: Sequelize.STRING
+				type: Sequelize.STRING,
+				validate: {
+					notEmpty: { msg: messages.user_name_required }
+				},
+				set: function(value) {
+					this.setDataValue('name', notBlank(value) ? value : '');
+				}
 			}
 		});
 
