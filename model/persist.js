@@ -296,8 +296,11 @@ class PersistModel {
 			.create(sanitize(user, ['id', 'password', 'name']), {
 				transaction: trx
 			})
-			.catch(Sequelize.UniqueConstraintError, function(error) {
-				error.message = messages.id_exist;
+			.catch(function(error) {
+				if (error.name === 'SequelizeUniqueConstraintError') {
+					error.message = messages.user_id_exist;
+				}
+
 				throw error;
 			});
 	}
