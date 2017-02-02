@@ -1,0 +1,38 @@
+const session = require('express-session');
+const messages = require('../static/messages.json');
+
+module.exports = function(express, model, config) {
+	const options = (function(cacheConfig) {
+		const result = {
+			secret: config.secret,
+			name: config.session.name,
+			resave: false,
+			saveUninitialized: false
+		};
+
+		if (cacheConfig) {
+			const RedisStore = require('connect-redis')(session);
+			result.store = new RedisStore({ client: model.cache.client });
+		}
+
+		return result;
+	})(config.database.cache)
+
+	express.use(session(options));
+
+	express.use(function(req, res, next) {
+		res.shouldSignin = function() {
+			if (!req.session || !req.session.user) {
+				const error = new Error(messages.login_required);
+				error.status = 403;
+
+				res.jsonAuto({ error: error });
+				return true;
+			}
+
+			return false;
+		};
+
+		next();
+	});
+};

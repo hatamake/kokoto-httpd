@@ -1,8 +1,15 @@
 const async = require('async');
 
-module.exports = function(config, express, model) {
-	express.get(`${config.url}/document/get/:documentId`, function(req, res) {
-		model.getDocument(req.params.documentId, function(error, document) {
+module.exports = function(express, model, config) {
+	express.post(`${config.url}/document`, function(req, res) {
+		if (res.shouldSignin()) { return; }
+
+		model.addDocument({
+			authorId: req.session.user.id,
+			title: req.body.title,
+			content: req.body.content,
+			tags: req.body.tags
+		}, function(error, document) {
 			res.jsonAuto({
 				error: error,
 				document: document
@@ -10,97 +17,49 @@ module.exports = function(config, express, model) {
 		});
 	});
 
-	express.get(`${config.url}/document/history/:indexId`, function(req, res) {
-		model.getDocumentHistory(req.params.indexId, function(error, history) {
-			res.jsonAuto({
-				error: error,
-				history: history
-			});
-		});
-	});
+	express.get(`${config.url}/document/search`, function(req, res) {
+		const {query, type, after} = req.query;
 
-	express.post(`${config.url}/document/add`, function(req, res) {
-		if (res.shouldSignin()) { return; }
-
-		async.waterfall([
-			(callback) => {
-				async.map(req.body.tags, function(reqTag, callback) {
-					model.findOrAddTag(reqTag.title, reqTag.color, function(error, tag) {
-						if (error) {
-							callback(error, null);
-						} else {
-							callback(null, tag._id);
-						}
-					});
-				}, callback);
-			},
-			(tagIds, callback) => {
-				model.addDocument({
-					author: req.user._id,
-					title: req.body.title,
-					markdown: req.body.markdown,
-					tags: tagIds
-				}, callback);
-			}
-		], function(error, document) {
-			res.jsonAuto({
-				error: error,
-				document: document
-			});
-		});
-	});
-
-	express.post(`${config.url}/document/update/:indexId`, function(req, res) {
-		if (res.shouldSignin()) { return; }
-
-		async.waterfall([
-			(callback) => {
-				async.map(req.body.tags, function(reqTag, callback) {
-					model.findOrAddTag(reqTag.title, reqTag.color, function(error, tag) {
-						if (error) {
-							callback(error, null);
-						} else {
-							callback(null, tag._id);
-						}
-					});
-				}, callback);
-			},
-			(tagIds, callback) => {
-				model.updateDocument(req.params.indexId, {
-					author: req.user._id,
-					title: req.body.title,
-					markdown: req.body.markdown,
-					tags: tagIds
-				}, callback);
-			}
-		], function(error, document) {
-			res.jsonAuto({
-				error: error,
-				document: document
-			});
-		});
-	});
-
-	express.get(`${config.url}/document/remove/:indexId`, function(req, res) {
-		if (res.shouldSignin()) { return; }
-
-		const indexId = req.params.indexId;
-		const authorId = req.user._id;
-
-		model.removeDocument(indexId, authorId, function(error) {
-			res.jsonAuto({ error: error });
-		});
-	});
-
-	express.post(`${config.url}/document/search`, function(req, res) {
-		const tagId = (req.body.tag || null);
-		const lastId = (req.body.after || null);
-
-		model.searchDocument(tagId, lastId, function(error, documents) {
+		model.searchDocument(type, query, after, function(error, documents) {
 			res.jsonAuto({
 				error: error,
 				documents: documents
 			});
+		});
+	});
+
+	express.get(`${config.url}/document/:id`, function(req, res) {
+		const id = req.params.id;
+
+		model.getDocument(id, function(error, document) {
+			res.jsonAuto({
+				error: error,
+				document: document
+			});
+		});
+	});
+
+	express.put(`${config.url}/document/:id`, function(req, res) {
+		if (res.shouldSignin()) { return; }
+
+		model.updateDocument(req.params.id, {
+			authorId: req.session.user.id,
+			title: req.body.title,
+			content: req.body.content,
+			tags: req.body.tags
+		}, function(error, document) {
+			res.jsonAuto({
+				error: error,
+				document: document
+			});
+		});
+	});
+
+	express.delete(`${config.url}/document/:id`, function(req, res) {
+		if (res.shouldSignin()) { return; }
+
+		model.archiveDocument(id, function(error) {
+			res.jsonAuto({ error: error });
 		});
 	});
 };

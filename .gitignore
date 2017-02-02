@@ -1,4 +1,7 @@
 node_modules/
+
 static/user/*.*
 !static/user/default.png
+
+.vscode
 run.js
