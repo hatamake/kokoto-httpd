@@ -1,5 +1,5 @@
 ===============================================================================
-caolan/async                                    https://github.com/caolan/async
+async                                           https://github.com/caolan/async
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 Copyright (c) 2010-2016 Caolan McMahon
 
@@ -49,7 +49,7 @@ THE SOFTWARE.
 
 
 ===============================================================================
-lodash/lodash                                  https://github.com/lodash/lodash
+lodash                                         https://github.com/lodash/lodash
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 Copyright JS Foundation and other contributors <https://js.foundation/>
 
@@ -101,34 +101,9 @@ terms above.
 
 
 ===============================================================================
-unclechu/node-deep-extend          https://github.com/unclechu/node-deep-extend
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-The MIT License (MIT)
-
-Copyright (c) 2013-2015, Viacheslav Lotsmanov
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software is furnished to do so,
-subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-
-===============================================================================
-expressjs/express                          https://github.com/expressjs/express
-expressjs/body-parser                  https://github.com/expressjs/body-parser
-expressjs/session                          https://github.com/expressjs/session
+express                                    https://github.com/expressjs/express
+body-parser                            https://github.com/expressjs/body-parser
+express-session                            https://github.com/expressjs/session
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 (The MIT License)
 
@@ -159,7 +134,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 ===============================================================================
-felixge/node-formidable              https://github.com/felixge/node-formidable
+Formidable                           https://github.com/felixge/node-formidable
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 Copyright (C) 2011 Felix Geisendörfer
 
@@ -183,7 +158,7 @@ IN THE SOFTWARE.
 
 
 ===============================================================================
-oliver-moran/jimp                          https://github.com/oliver-moran/jimp
+Jimp                                       https://github.com/oliver-moran/jimp
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 The MIT License (MIT)
 
@@ -268,7 +243,7 @@ MIT
 
 
 ===============================================================================
-e-/Hangul.js                                    https://github.com/e-/Hangul.js
+Hangul.js                                       https://github.com/e-/Hangul.js
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 Copyright (c) 2012-2016 Jaemin Jo
 
@@ -292,3 +267,30 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
+
+
+===============================================================================
+KotoParser                              https://github.com/hatamake/koto-parser
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+MIT License
+
+Copyright (c) 2015 raon0211 <raon0211@outlook.com>
+Copyright (c) 2017 cumul <gg6123@naver.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

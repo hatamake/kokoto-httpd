@@ -22,7 +22,6 @@
     "bluebird": "^3.4.7",
     "body-parser": "^1.15.2",
     "connect-redis": "^3.2.0",
-    "deep-extend": "^0.4.1",
     "express": "^4.14.0",
     "express-session": "^1.14.2",
     "formidable": "^1.0.17",
