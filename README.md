@@ -61,7 +61,7 @@ You can use every property `http.Server` implements ─ including `close` event,
 ## License
 
 kokoto-httpd is licensed under the MIT License.
-See [LICENSE](/LICENSE) and [NOTICE](/NOTICE) for full license text.
+See [LICENSE](/LICENSE) and [NOTICE](/NOTICE) for the full license text.
 
 ```
 MIT License

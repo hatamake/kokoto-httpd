@@ -61,6 +61,9 @@ module.exports = function(express, model, config) {
 			}
 
 			id = req.session.user.id;
+		} else if (!/^[a-zA-Z0-9_]{4,20}$/.test(id)) {
+			res.jsonAuto({ error: new Error(messages.user_id_invalid) });
+			return;
 		}
 
 		async.waterfall([

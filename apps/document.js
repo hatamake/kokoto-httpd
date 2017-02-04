@@ -1,4 +1,23 @@
+const _ = require('lodash');
 const async = require('async');
+const JsDiff = require('diff');
+
+const messages = require('../static/messages.json');
+
+JsDiff.diffBlocks = function(a, b) {
+	return JsDiff.diffLines(a, b).reduce(function(result, item) {
+		const lastItem = (_.last(result) || {});
+
+		if (item.added && lastItem.removed) {
+			lastItem.added = true;
+			lastItem.value = JsDiff.diffWords(lastItem.value, item.value);
+		} else {
+			result.push(item);
+		}
+
+		return result;
+	}, []);
+};
 
 module.exports = function(express, model, config) {
 	express.post(`${config.url}/document`, function(req, res) {
@@ -35,6 +54,32 @@ module.exports = function(express, model, config) {
 			res.jsonAuto({
 				error: error,
 				document: document
+			});
+		});
+	});
+
+	express.get(`${config.url}/document/:id/diff`, function(req, res) {
+		const thisId = req.params.id;
+		const thatId = req.query.to;
+
+		async.waterfall([
+			function(callback) {
+				async.map([thisId, thatId], function(id, callback) {
+					model.getDocument(id, callback);
+				}, callback);
+			},
+			function(documents, callback) {
+				const thisContent = documents[0].content;
+				const thatContent = documents[1].content;
+
+				const diff = JsDiff.diffBlocks(thisContent, thatContent);
+
+				callback(null, diff);
+			}
+		], function(error, diff) {
+			res.jsonAuto({
+				error: error,
+				diff: diff
 			});
 		});
 	});

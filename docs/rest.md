@@ -23,7 +23,7 @@ Fetches the value of `config.site` by its key.
 
 ### PUT /session
 
-Processes sign-in with provided user information.
+Processes sign-in with the provided user information.
 
 #### Request
 
@@ -99,7 +99,7 @@ Fetches the profile picture of the specified user.
 
 #### Response
 
-   A `image/png ` file stream.
+   An `image/png ` file stream.
 
 ### PUT /user/me
 
@@ -148,6 +148,26 @@ Fetches the [DocumentObject](object.md#documentobject) whose `document.id` is re
   ----------|-------------
    error    | [ErrorObject](object.md#errorobject)
    document | [DocumentObject](object.md#documentobject)
+
+#### GET /document/:id/diff
+
+Compare the two given documents' content and send the result.
+
+#### Request
+
+   Key      | Default | Description
+  ----------|---------|--------------
+   :id      |         | Specify `document.id` to compare from
+   ?to      |         | Specify `document.id` to compare to
+
+The document specified by `:id` is compared with `?to`.
+
+#### Response
+
+   Key      | Description
+  ----------|-------------
+   error    | [ErrorObject](object.md#errorobject)
+   diff     | An *array* of [BlockDiffObject](object.md#blockdiffobject)
 
 ### POST /document
 
