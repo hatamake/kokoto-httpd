@@ -1,8 +1,10 @@
 const _ = require('lodash');
 
-module.exports = function(express, model, config) {
-	express.use(function(req, res, next) {
-		res.jsonAuto = function(data) {
+const messages = require('../static/messages.json');
+
+function middleware(express, model, config) {
+	express.use(function (req, res, next) {
+		res.jsonAuto = function (data) {
 			let status = 200;
 			let json = data;
 
@@ -22,4 +24,14 @@ module.exports = function(express, model, config) {
 
 		next();
 	});
-};
+}
+
+class HttpError extends Error {
+	constructor(messageId, status) {
+		super(messages[messageId] || messageId);
+		this.status = status;
+	}
+}
+
+module.exports = middleware;
+module.exports.HttpError = HttpError;

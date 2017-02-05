@@ -1,22 +1,7 @@
 const async = require('async');
-const Promise = require('bluebird');
 
 const PersistModel = require('./persist.js');
 const CacheModel = require('./cache.js');
-
-function callbackToPromise(callback, promise) {
-	return new Promise(function(resolve, reject) {
-		callback(function(error) {
-			if (error) {
-				reject(error);
-			} else if (arguments.length <= 2) {
-				resolve(arguments[1]);
-			} else {
-				resolve(Array.prototype.splice.call(arguments, 1));
-			}
-		});
-	})
-}
 
 function promiseToCallback(promise, callback) {
 	promise.then(function(result) {

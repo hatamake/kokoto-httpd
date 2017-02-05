@@ -1,5 +1,6 @@
 const session = require('express-session');
-const messages = require('../static/messages.json');
+
+const {HttpError} = require('./error');
 
 module.exports = function(express, model, config) {
 	const options = (function(cacheConfig) {
@@ -16,21 +17,21 @@ module.exports = function(express, model, config) {
 		}
 
 		return result;
-	})(config.database.cache)
+	})(config.database.cache);
 
 	express.use(session(options));
 
 	express.use(function(req, res, next) {
 		res.shouldSignin = function() {
 			if (!req.session || !req.session.user) {
-				const error = new Error(messages.login_required);
-				error.status = 403;
+				res.jsonAuto({
+					error: new HttpError('login_required', 403)
+				});
 
-				res.jsonAuto({ error: error });
 				return true;
+			} else {
+				return false;
 			}
-
-			return false;
 		};
 
 		next();

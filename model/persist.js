@@ -7,6 +7,7 @@ const Hangul = require('hangul-js');
 const Parser = require('koto-parser');
 
 const messages = require('../static/messages.json');
+const {HttpError} = require('../server/error');
 
 function notBlank(text) {
 	return (_.isString(text) && text.trim() !== '');
@@ -33,10 +34,30 @@ function sanitize(data, include, exclude) {
 	return result;
 }
 
+function populateAttrs(instance, attrKeys, trx) {
+	const result = instance.toJSON();
+
+	Promise.map(attrKeys, function(attrKey) {
+		return instance['get' + _.capitalize(attrKey)]({
+			transaction: trx
+		}).then(function(attrValue) {
+			if (_.isArray(attrValue)) {
+				return Promise.map(attrValue, function(item) {
+					return item.finalize(trx);
+				});
+			} else {
+				return attrValue.finalize(trx);
+			}
+		}).then(function(attr) {
+			result[attrKey] = attr;
+		});
+	}).thenReturn(result);
+}
+
 function isCompleteChar(char) {
 	if (char.match(/[ㄱ-ㅎㅏ-ㅣ가-힣]/)) {
 		if (Hangul.endsWithConsonant(char)) {
-			const lastSound = _.last(Hangul.disassemble(lastChar));
+			const lastSound = _.last(Hangul.disassemble(char));
 			return (['ㄱ', 'ㄴ', 'ㄹ', 'ㅂ'].indexOf(lastSound) >= 0);
 		} else {
 			return true;
@@ -135,11 +156,62 @@ class PersistModel {
 				}
 			}
 		}, {
-			indexes: [
-				{
-					fields: ['historyId']
+			indexes: [{
+				fields: ['historyId']
+			}]
+		});
+
+		this.File = this.client.define('File', {
+			historyId: {
+				type: Sequelize.STRING,
+				allowNull: false,
+				defaultValue: uuid
+			},
+			isArchived: {
+				type: Sequelize.BOOLEAN,
+				allowNull: false,
+				defaultValue: false
+			},
+			title: {
+				type: Sequelize.STRING
+			},
+			content: {
+				type: Sequelize.TEXT
+			},
+			parsedContent: {
+				type: Sequelize.TEXT
+			}
+		}, {
+			indexes: [{
+				fields: ['historyId']
+			}]
+		});
+
+		this.Comment = this.client.define('Comment', {
+			content: {
+				type: Sequelize.TEXT,
+				validate: {
+					notEmpty: { msg: messages.content_required }
+				},
+				set: function(value) {
+					this.setDataValue('content', notBlank(value) ? value : '');
 				}
-			]
+			},
+			range: {
+				type: Sequelize.STRING,
+				validate: {
+					is: {
+						args: /^{(\s*("start"|"end"|'start'|'end'|start|end)\s*:\s*\d+\s*,?\s*)+}$/
+					}
+				},
+				set: function(value) {
+					if (_.isObjectLike(value)) {
+						value = JSON.stringify(value);
+					}
+
+					this.setDataValue('range', value);
+				}
+			}
 		});
 
 		this.Tag = this.client.define('Tag', {
@@ -172,88 +244,42 @@ class PersistModel {
 			}
 		});
 
-		this.Comment = this.client.define('Comment', {
-			content: {
-				type: Sequelize.TEXT,
-				validate: {
-					notEmpty: { msg: messages.content_required }
-				},
-				set: function(value) {
-					this.setDataValue('content', notBlank(value) ? value : '');
-				}
-			},
-			range: {
-				type: Sequelize.STRING,
-				validate: {
-					is: {
-						args: /^{(\s*("start"|"end"|'start'|'end'|start|end)\s*:\s*\d+\s*,?\s*)+}$/
-					}
-				},
-				set: function(value) {
-					if (_.isObjectLike(value)) {
-						value = JSON.stringify(value);
-					} else {
-						value = '';
-					}
-
-					this.setDataValue('range', value);
-				}
-			}
-		});
-
 		this.Document.belongsTo(this.User, { as: 'author' });
-		this.Comment.belongsTo(this.User, { as: 'author' });
-
 		this.Document.belongsToMany(this.Tag, {
-			through: 'DocumentToTag',
+			through: 'TagLookup',
 			foreignKey: 'documentId',
 			otherKey: 'tagId'
 		});
-
 		this.Document.hasMany(this.Comment, { foreignKey: 'documentId' });
 
+		this.File.belongsTo(this.User, { as: 'author' });
+		this.File.belongsToMany(this.Tag, {
+			through: 'TagLookup',
+			foreignKey: 'fileId',
+			otherKey: 'tagId'
+		});
+		this.File.hasMany(this.Comment, { foreignKey: 'fileId' });
+
+		this.Comment.belongsTo(this.User, { as: 'author' });
+
 		this.User.Instance.prototype.finalize = function(trx) {
-			const result = sanitize(this.toJSON(), null, ['password']);
-			return Promise.resolve(result);
+			Promise.resolve(sanitize(this.toJSON(), null, ['password']));
 		};
 
 		this.Document.Instance.prototype.finalize = function(trx) {
-			const result = this.toJSON();
+			return populateAttrs(this, ['author', 'tags', 'comments'], trx);
+		};
 
-			return Promise.all([
-				Promise.map(['author', 'tags', 'comments'], (key) => {
-					return this['get' + _.capitalize(key)]({
-						transaction: trx
-					}).then(function(value) {
-						if (_.isArray(value)) {
-							return Promise.map(value, function(instance) {
-								return instance.finalize(trx);
-							});
-						} else {
-							return value.finalize(trx);
-						}
-					}).then(function(value) {
-						result[key] = value;
-					});
-				}),
-			]).thenReturn(result);
+		this.File.Instance.prototype.finalize = function(trx) {
+			return populateAttrs(this, ['author', 'tags', 'comments'], trx);
 		};
 
 		this.Tag.Instance.prototype.finalize = function(trx) {
-			const result = sanitize(this.toJSON(), null, ['DocumentToTag']);
-			return Promise.resolve(result);
+			Promise.resolve(sanitize(this.toJSON(), null, ['TagLookup']));
 		};
 
 		this.Comment.Instance.prototype.finalize = function(trx) {
-			const result = this.toJSON();
-
-			result.range = JSON.parse(result.range);
-
-			return this.getAuthor({ transaction: trx }).then(function(author) {
-				return author.finalize(trx).then(function(author) {
-					result.author = sanitize(author, null, ['password']);
-				});
-			}).thenReturn(result);
+			return populateAttrs(this, ['author'], trx);
 		};
 	}
 
@@ -266,7 +292,7 @@ class PersistModel {
 			.findById(id, { transaction: trx })
 			.then(function(user) {
 				if (!user) {
-					throw new Error(messages.user_not_exist);
+					throw new HttpError('user_not_exist', 404);					
 				}
 
 				return user;
@@ -284,7 +310,7 @@ class PersistModel {
 			})
 			.then(function(user) {
 				if (!user) {
-					throw new Error(messages.login_failed);
+					throw new HttpError('login_failed', 401);
 				}
 
 				return user;
@@ -313,7 +339,7 @@ class PersistModel {
 			})
 			.spread((count) => {
 				if (count === 0) {
-					throw new Error(messages.user_not_exist);
+					throw new HttpError('user_not_exist', 404);
 				}
 
 				return this.getUser(id, trx);
@@ -325,7 +351,7 @@ class PersistModel {
 			.findById(id, { transaction: trx })
 			.then(function(user) {
 				if (!user) {
-					throw new Error(messages.user_not_exist);
+					throw new HttpError('user_not_exist', 404);
 				}
 
 				return user
@@ -339,7 +365,7 @@ class PersistModel {
 			.findById(id, { transaction: trx })
 			.then((document) => {
 				if (!document) {
-					throw new Error(messages.document_not_exist);
+					throw new HttpError('document_not_exist', 404);
 				}
 
 				return document;
@@ -350,20 +376,20 @@ class PersistModel {
 		let search;
 
 		switch (type) {
-			case 'history':
-				search = this.searchDocumentByHistoryId;
-				break;
+		case 'history':
+			search = this.searchDocumentByHistoryId;
+			break;
 
-			case 'tag':
-				search = this.searchDocumentByTagId;
-				break;
+		case 'tag':
+			search = this.searchDocumentByTagId;
+			break;
 
-			case 'text':
-				search = this.searchDocumentByText;
-				break;
+		case 'text':
+			search = this.searchDocumentByText;
+			break;
 
-			default:
-				search = this.searchDocumentByDate;
+		default:
+			search = this.searchDocumentByDate;
 		}
 		
 		return search.call(this, query, pagination, trx);
@@ -392,7 +418,7 @@ class PersistModel {
 			})
 			.then(function(documents) {
 				if (documents.length === 0) {
-					throw new Error(messages.document_not_exist);
+					throw new HttpError('document_not_exist', 404);
 				}
 
 				return documents;
@@ -418,7 +444,7 @@ class PersistModel {
 			})
 			.then(function(documents) {
 				if (documents.length === 0) {
-					throw new Error(messages.tag_not_exist);
+					throw new HttpError('tag_not_exist', 404);
 				}
 
 				return documents;
@@ -476,21 +502,24 @@ class PersistModel {
 	updateDocument(id, document, trx) {
 		return this.Document
 			.findOne({
-				where: {
-					id: id,
-					isArchived: false
-				},
+				where: { id: id },
 				transaction: trx
 			})
 			.then((foundDocument) => {
 				if (!foundDocument) {
-					throw new Error(messages.document_not_exist);
+					throw new HttpError('document_not_exist', 404);
+				}
+
+				if (foundDocument.isArchived) {
+					throw new HttpError('document_already_updated', 409);
 				}
 
 				return this.archiveDocumentInstance(foundDocument, trx);
 			})
 			.then((foundDocument) => {
 				document.historyId = foundDocument.historyId;
+				document.revision = foundDocument.revision + 1;
+
 				return this.addDocument(document, trx);
 			});
 	}
@@ -506,7 +535,7 @@ class PersistModel {
 			})
 			.then((foundDocument) => {
 				if (!foundDocument) {
-					throw new Error(messages.document_not_exist);
+					throw new HttpError('document_not_exist', 404);
 				}
 
 				return this.archiveDocumentInstance(foundDocument, trx);
@@ -529,7 +558,7 @@ class PersistModel {
 			.findById(id, { transaction: trx })
 			.then(function(tag) {
 				if (!tag) {
-					throw new Error(messages.tag_not_exist);
+					throw new HttpError('tag_not_exist', 404);
 				}
 
 				return tag;
@@ -583,7 +612,7 @@ class PersistModel {
 			})
 			.spread((count) => {
 				if (count === 0) {
-					throw new Error(messages.tag_not_exist);
+					throw new HttpError('tag_not_exist', 404);
 				}
 
 				return this.getTag(id, trx);
@@ -595,7 +624,7 @@ class PersistModel {
 			.findById(id, { transaction: trx })
 			.then(function(tag) {
 				if (!tag) {
-					throw new Error(messages.tag_not_exist);
+					throw new HttpError('tag_not_exist', 404);
 				}
 
 				return tag
@@ -633,7 +662,7 @@ class PersistModel {
 			.findById(id, { transaction: trx })
 			.then(function(tag) {
 				if (!tag) {
-					throw new Error(messages.tag_not_exist);
+					throw new HttpError('tag_not_exist', 404);
 				}
 
 				if (tag.count === 1) {
@@ -649,42 +678,52 @@ class PersistModel {
 			.findById(id, { transaction: trx })
 			.then(function(comment) {
 				if (!comment) {
-					throw new Error(messages.comment_not_exist);
+					throw new HttpError('comment_not_exist', 404);
 				}
 
 				return comment;
-			})
+			});
 	}
 
 	addComment(documentId, comment, trx) {
 		return this.Document
-			.findById(documentId, { transaction: trx })
+			.findOne({
+				where: {
+					id: documentId,
+					isArchived: false
+				},
+				transaction: trx
+			})
 			.then(function(document) {
 				if (!document) {
-					throw new Error(messages.document_not_exist);
+					throw new HttpError('document_not_exist', 404);
 				}
 
-				return document
-					.createComment(sanitize(comment, ['content', 'range']), {
-						transaction: trx
-					});
+				return document.createComment(sanitize(comment, ['content', 'range']), {
+					transaction: trx
+				});
 			})
 			.then(function(addedComment) {
 				return addedComment
 					.setAuthor(comment.authorId, { transaction: trx })
 					.thenReturn(addedComment);
-			})
+			});
 	}
 
 	updateComment(id, comment, trx) {
 		return this.Comment
 			.update(sanitize(comment, ['content', 'range']), {
 				where: { id: id },
+				include: [{
+					model: this.Document,
+					attributes: [],
+					where: { isArchived: false }
+				}],
 				transaction: trx
 			})
 			.spread((count) => {
 				if (count === 0) {
-					throw new Error(messages.comment_not_exist);
+					throw new HttpError('comment_not_exist', 404);
 				}
 
 				return this.getComment(id, trx);
@@ -693,10 +732,20 @@ class PersistModel {
 
 	removeComment(id, trx) {
 		return this.Comment
-			.findById(id, { transaction: trx })
+			.findOne({
+				where: {
+					id: id
+				},
+				include: [{
+					model: this.Document,
+					attributes: [],
+					where: { isArchived: false }
+				}],
+				transaction: trx
+			})
 			.then(function(comment) {
 				if (!comment) {
-					throw new Error(messages.comment_not_exist);
+					throw new HttpError('comment_not_exist', 404);
 				}
 
 				return comment
