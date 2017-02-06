@@ -2,8 +2,6 @@ const _ = require('lodash');
 const async = require('async');
 const JsDiff = require('diff');
 
-const messages = require('../static/messages.json');
-
 JsDiff.diffBlocks = function(a, b) {
 	return JsDiff.diffLines(a, b).reduce(function(result, item) {
 		const lastItem = (_.last(result) || {});
@@ -26,7 +24,7 @@ module.exports = function(express, model, config) {
 		model.addDocument({
 			authorId: req.session.user.id,
 			title: req.body.title,
-			content: req.body.content,
+			content: (req.body.content || ''),
 			tags: req.body.tags
 		}, function(error, document) {
 			res.jsonAuto({

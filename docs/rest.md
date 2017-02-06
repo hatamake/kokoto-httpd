@@ -118,7 +118,7 @@ Updates user information of currently signed in user.
    Key      | Description
   ----------|-------------
    error    | [ErrorObject](object.md#errorobject)
-   user     | [UserObject](object.md#userobject) of updated user.
+   user     | The [UserObject](object.md#userobject) of updated user.
 
 ### DELETE /user/me
 
@@ -129,6 +129,24 @@ Removes currently signed in user and destroys current session.
    Key      | Description
   ----------|-------------
    error    | [ErrorObject](object.md#errorobject)
+
+### GET /user/search
+
+Fetches the list of the users containing requested text in its `user.id` or `user.name`.
+
+#### Request
+
+   Key      | Default | Description
+  ----------|---------|--------------
+   [?query] |         | The target text searched from `user.id` or `user.name`
+   [?after] | `'\0'`  | The `user.id` of the last user in the previous search result. Used for pagination.
+
+#### Response
+
+   Key      | Description
+  ----------|-------------
+   error    | [ErrorObject](object.md#errorobject)
+   tags     | The *array* of [UserObject](object.md#userobject)s
 
 ## /document
 

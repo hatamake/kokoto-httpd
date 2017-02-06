@@ -86,7 +86,7 @@ class PersistModel {
 						msg: messages.user_id_invalid
 					},
 					notIn: {
-						args: [['me']],
+						args: [['me' ,'search']],
 						msg: messages.user_id_exist
 					}
 				}
@@ -325,6 +325,53 @@ class PersistModel {
 				}
 
 				return user;
+			});
+	}
+
+	searchUser(query, pagination, trx) {
+		let lastChar = query.substr(query.length - 1, 1);
+
+		if (isCompleteChar(lastChar)) {
+			query = query.substr(0, query.length - 1);
+		} else {
+			lastChar = null;
+		}
+
+		return this.User
+			.findAll({
+				where: {
+					$or: {
+						id: {
+							$like: `%${query}%`,
+							$gt: pagination[0]
+						},
+						name: { $like: `%${query}%` }
+					}
+				},
+				order: [['id', 'ASC']],
+				limit: pagination[1],
+				transaction: trx
+			})
+			.filter(function(user) {
+				if (lastChar === null) {
+					return true;
+				}
+
+				return [user.id, user.name].find(function(item) {
+					const queryIndex = item.indexOf(queryIndex);
+
+					if (queryIndex < 0) {
+						return false;
+					}
+
+					const charAfterQuery = user.id.substr(queryIndex + 1, 1);
+
+					if (charAfterQuery) {
+						return Hangul.search(charAfterQuery, lastChar);
+					} else {
+						return false;
+					}
+				});
 			});
 	}
 
@@ -770,10 +817,6 @@ class PersistModel {
 	}
 
 	searchTag(query, pagination, trx) {
-		if (!query) {
-			return this.Tag.findAll();
-		}
-
 		let lastChar = query.substr(query.length - 1, 1);
 
 		if (isCompleteChar(lastChar)) {
@@ -782,27 +825,24 @@ class PersistModel {
 			lastChar = null;
 		}
 
-		const options = {
-			where: { title: { $like: `%${query}%` } },
-			order: [['title', 'ASC']],
-			transaction: trx
-		};
-
-		if (query) {
-			options.where.id = { $gt: pagination[0] };
-			options.limit = pagination[1];
-		}
-
 		return this.Tag
-			.findAll(options)
+			.findAll({
+				where: {
+					id: { $gt: pagination[0] },
+					title: { $like: `%${query}%` }
+				},
+				order: [['title', 'ASC']],
+				limit: pagination[1],
+				transaction: trx
+			})
 			.filter(function(tag) {
 				if (lastChar === null) {
 					return true;
 				}
-				
+
 				const queryIndex = tag.title.indexOf(query);
 				const charAfterQuery = tag.title.substr(queryIndex + 1, 1);
-				
+
 				if (charAfterQuery) {
 					return Hangul.search(charAfterQuery, lastChar);
 				} else {

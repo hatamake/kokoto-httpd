@@ -43,6 +43,19 @@ class KokotoModel {
 		promiseToCallback(promise, callback);
 	}
 
+	searchUser(query, lastId, callback) {
+		query = (query || '');
+		lastId = (lastId || '\0');
+
+		const promise = this.persist
+			.searchUser(query, [lastId, this.config.site.pagination], null)
+			.map(function(user) {
+				return user.finalize(null);
+			});
+
+		promiseToCallback(promise, callback);
+	}
+
 	addUser(user, callback) {
 		this.doWithTrx(
 			this.persist.addUser, user,
@@ -93,12 +106,11 @@ class KokotoModel {
 	}
 
 	searchDocument(type, query, lastId, callback) {
+		query = (query || '');
+		lastId = (lastId || -1);
+
 		const promise = this.persist
-			.searchDocument(
-				type, query,
-				[(lastId || -1), this.config.site.pagination],
-				null
-			)
+			.searchDocument(type, query, [lastId, this.config.site.pagination], null)
 			.map(function(document) {
 				return document.finalize(null);
 			});
@@ -135,12 +147,11 @@ class KokotoModel {
 	}
 
 	searchFile(type, query, lastId, callback) {
+		query = (query || '');
+		lastId = (lastId || -1);
+
 		const promise = this.persist
-			.searchFile(
-				type, query,
-				[(lastId || -1), this.config.site.pagination],
-				null
-			)
+			.searchFile(type, query, [lastId, this.config.site.pagination], null)
 			.map(function(file) {
 				return file.finalize(null);
 			});
@@ -149,32 +160,24 @@ class KokotoModel {
 	}
 
 	addFile(file, callback) {
-		this.doWithTrx(
-			this.persist.addFile, file,
-			callback
-		);
+		this.doWithTrx(this.persist.addFile, file, callback);
 	}
 
 	updateFile(id, file, callback) {
-		this.doWithTrx(
-			this.persist.updateFile, id, file,
-			callback
-		);
+		this.doWithTrx(this.persist.updateFile, id, file, callback);
 	}
 
 	archiveFile(id, callback) {
-		this.doWithTrx(
-			this.persist.archiveFile, id,
-			callback
-		);
+		this.doWithTrx(this.persist.archiveFile, id, callback);
 	}
 
 	searchTag(query, lastId, callback) {
 		query = (query || '');
+		lastId = (lastId || -1);
 
 		async.waterfall([
 			(callback) => {
-				this.cache.loadTagSearch(query, function(error, cachedTags) {
+				this.cache.loadTagSearch(query, lastId, function(error, cachedTags) {
 					callback(null, cachedTags);
 				});
 			},
@@ -185,17 +188,13 @@ class KokotoModel {
 				}
 
 				this.persist
-					.searchTag(
-						query,
-						[(lastId || -1), this.config.site.pagination],
-						null
-					)
+					.searchTag(query, [lastId, this.config.site.pagination], null)
 					.map(function(tag) {
 						return tag.finalize(null);
 					})
 					.then((tags) => {
 						callback(null, tags);
-						this.cache.saveTagSearch(query, tags);
+						this.cache.saveTagSearch(query, lastId, tags);
 					})
 					.catch(function(error) {
 						callback(error, null);

@@ -29,6 +29,17 @@ module.exports = function(express, model, config) {
 		});
 	});
 
+	express.get(`${config.url}/user/search`, function(req, res) {
+		const {query, after} = req.query;
+
+		model.searchUser(query, after, function(error, users) {
+			res.jsonAuto({
+				error: error,
+				users: users
+			});
+		});
+	});
+
 	express.get(`${config.url}/user/:id`, function(req, res) {
 		let id = req.params.id;
 
