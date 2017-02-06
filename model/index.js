@@ -127,7 +127,51 @@ class KokotoModel {
 		);
 	}
 
+	getFile(id, callback) {
+		this.doWithoutTrx(
+			this.persist.getFile, id,
+			callback
+		);
+	}
+
+	searchFile(type, query, lastId, callback) {
+		const promise = this.persist
+			.searchFile(
+				type, query,
+				[(lastId || -1), this.config.site.pagination],
+				null
+			)
+			.map(function(file) {
+				return file.finalize(null);
+			});
+
+		promiseToCallback(promise, callback);
+	}
+
+	addFile(file, callback) {
+		this.doWithTrx(
+			this.persist.addFile, file,
+			callback
+		);
+	}
+
+	updateFile(id, file, callback) {
+		this.doWithTrx(
+			this.persist.updateFile, id, file,
+			callback
+		);
+	}
+
+	archiveFile(id, callback) {
+		this.doWithTrx(
+			this.persist.archiveFile, id,
+			callback
+		);
+	}
+
 	searchTag(query, lastId, callback) {
+		query = (query || '');
+
 		async.waterfall([
 			(callback) => {
 				this.cache.loadTagSearch(query, function(error, cachedTags) {

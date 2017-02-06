@@ -48,9 +48,7 @@ module.exports = function(express, model, config) {
 	});
 
 	express.get(`${config.url}/document/:id`, function(req, res) {
-		const id = req.params.id;
-
-		model.getDocument(id, function(error, document) {
+		model.getDocument(req.params.id, function(error, document) {
 			res.jsonAuto({
 				error: error,
 				document: document
@@ -103,7 +101,7 @@ module.exports = function(express, model, config) {
 	express.delete(`${config.url}/document/:id`, function(req, res) {
 		if (res.shouldSignin()) { return; }
 
-		model.archiveDocument(id, function(error) {
+		model.archiveDocument(req.params.id, function(error) {
 			res.jsonAuto({ error: error });
 		});
 	});

@@ -2,7 +2,7 @@ const async = require('async');
 const formidable = require('formidable');
 const path = require('path');
 const fs = require('fs');
-const Jimp = require("jimp");
+const Jimp = require('jimp');
 
 const messages = require('../static/messages.json');
 
@@ -104,7 +104,6 @@ module.exports = function(express, model, config) {
 
 					form.uploadDir = uploadDirPath;
 					form.keepExtensions = true;
-					form.maxFieldsSize = 2 * 1024 * 1024;
 
 					form.parse(req, callback);
 				} else if (type.startsWith('application/x-www-form-urlencoded')) {

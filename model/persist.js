@@ -128,6 +128,11 @@ class PersistModel {
 				allowNull: false,
 				defaultValue: false
 			},
+			revision: {
+				type:Sequelize.INTEGER,
+				allowNull: false,
+				defaultValue: 1
+			},
 			title: {
 				type: Sequelize.STRING,
 				validate: {
@@ -172,8 +177,14 @@ class PersistModel {
 				allowNull: false,
 				defaultValue: false
 			},
-			title: {
-				type: Sequelize.STRING
+			revision: {
+				type:Sequelize.INTEGER,
+				allowNull: false,
+				defaultValue: 1
+			},
+			filename: {
+				type: Sequelize.STRING,
+				allowNull: false
 			},
 			content: {
 				type: Sequelize.TEXT
@@ -553,6 +564,199 @@ class PersistModel {
 			.thenReturn(document);
 	}
 
+	getFile(id, trx) {
+		return this.File
+			.findById(id, { transaction: trx })
+			.then((file) => {
+				if (!file) {
+					throw new HttpError('file_not_exist', 404);
+				}
+
+				return file;
+			});
+	}
+
+	searchFile(type, query, pagination, trx) {
+		let search;
+
+		switch (type) {
+		case 'history':
+			search = this.searchFileByHistoryId;
+			break;
+
+		case 'tag':
+			search = this.searchFileByTagId;
+			break;
+
+		case 'text':
+			search = this.searchFileByText;
+			break;
+
+		default:
+			search = this.searchFileByDate;
+		}
+
+		return search.call(this, query, pagination, trx);
+	}
+
+	searchFileByDate(__, pagination, trx) {
+		return this.File
+			.findAll({
+				where: { id: { $gt: pagination[0]} },
+				order: [['updatedAt', 'DESC']],
+				limit: pagination[1],
+				transaction: trx
+			});
+	}
+
+	searchFileByHistoryId(historyId, pagination, trx) {
+		return this.File
+			.findAll({
+				where: {
+					id: { $gt: pagination[0] },
+					historyId: historyId
+				},
+				order: [['updatedAt', 'DESC']],
+				limit: pagination[1],
+				transaction: trx
+			})
+			.then(function(files) {
+				if (files.length === 0) {
+					throw new HttpError('file_not_exist', 404);
+				}
+
+				return files;
+			});
+	}
+
+	searchFileByTagId(tagId, pagination, trx) {
+		return this.File
+			.findAll({
+				where: {
+					id: { $gt: pagination[0] }
+				},
+				include: [{
+					model: this.Tag,
+					attributes: [],
+					where: {
+						id: tagId
+					}
+				}],
+				limit: pagination[1],
+				order: [['updatedAt', 'DESC']],
+				transaction: trx
+			})
+			.then(function(files) {
+				if (files.length === 0) {
+					throw new HttpError('tag_not_exist', 404);
+				}
+
+				return files;
+			});
+	}
+
+	searchFileByText(text, pagination, trx) {
+		return this.File
+			.findAll({
+				where: {
+					$or: [
+						{ filename: { $like: `%${text}%` } },
+						{ content: { $like: `%${text}%` } },
+					],
+					id: { $gt: pagination[0] }
+				},
+				order: [['updatedAt', 'DESC']],
+				limit: pagination[1],
+				transaction: trx
+			});
+	}
+
+	addFile(file, trx) {
+		return new Promise(function(resolve, reject) {
+			Parser.render(file.content, function(error, parsedContent) {
+				if (error) {
+					reject(error);
+				} else {
+					resolve(parsedContent);
+				}
+			});
+		})
+		.then((parsedContent) => {
+			file.parsedContent = parsedContent;
+
+			return this.File
+				.create(sanitize(file, ['historyId', 'filename', 'content', 'parsedContent']), {
+					transaction: trx
+				})
+				.then((createdFile) => {
+					return Promise.all([
+						createdFile.setAuthor(file.authorId, { transaction: trx }),
+
+						Promise.map(file.tags, (tag) => {
+							return this.increaseOrAddTag(tag, trx);
+						}).then(function(tags) {
+							return createdFile.setTags(tags, { transaction: trx });
+						})
+					])
+					.thenReturn(createdFile);
+				});
+		});
+	}
+
+	updateFile(id, file, trx) {
+		return this.File
+			.findOne({
+				where: { id: id },
+				transaction: trx
+			})
+			.then((foundFile) => {
+				if (!foundFile) {
+					throw new HttpError('file_not_exist', 404);
+				}
+
+				if (foundFile.isArchived) {
+					throw new HttpError('file_already_updated', 409);
+				}
+
+				return this.archiveFileInstance(foundFile, trx);
+			})
+			.then((foundFile) => {
+				file.historyId = foundFile.historyId;
+				file.revision = foundFile.revision + 1;
+
+				return this.addFile(file, trx);
+			});
+	}
+
+	archiveFile(id, trx) {
+		return this.File
+			.findOne({
+				where: {
+					id: id,
+					isArchived: false
+				},
+				transaction: trx
+			})
+			.then((foundFile) => {
+				if (!foundFile) {
+					throw new HttpError('file_not_exist', 404);
+				}
+
+				return this.archiveFileInstance(foundFile, trx);
+			});
+	}
+
+	archiveFileInstance(file, trx) {
+		return file
+			.update({ isArchived: true }, { transaction: trx })
+			.then(() => {
+				return file.getTags({ transaction: trx }).map((tag) => {
+					return this.decreaseOrRemoveTag(tag.id, trx);
+				});
+			})
+			.thenReturn(file);
+	}
+
 	getTag(id, trx) {
 		return this.Tag
 			.findById(id, { transaction: trx })
@@ -578,16 +782,19 @@ class PersistModel {
 			lastChar = null;
 		}
 
+		const options = {
+			where: { title: { $like: `%${query}%` } },
+			order: [['title', 'ASC']],
+			transaction: trx
+		};
+
+		if (query) {
+			options.where.id = { $gt: pagination[0] };
+			options.limit = pagination[1];
+		}
+
 		return this.Tag
-			.findAll({
-				where: {
-					title: { $like: `%${query}%` },
-					id: { $gt: pagination[0] }
-				},
-				order: [['title', 'ASC']],
-				limit: pagination[1],
-				transaction: trx
-			})
+			.findAll(options)
 			.filter(function(tag) {
 				if (lastChar === null) {
 					return true;

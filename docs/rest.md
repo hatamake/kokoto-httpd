@@ -53,7 +53,7 @@ Removes current session and sign out.
 
 ### POST /user
 
-Creates new user, and process sign-in with the new user.
+Creates a new user, and process sign-in with the new user.
 
 #### Request
 
@@ -99,7 +99,7 @@ Fetches the profile picture of the specified user.
 
 #### Response
 
-   An `image/png ` file stream.
+   An `image/png` file stream.
 
 ### PUT /user/me
 
@@ -171,7 +171,7 @@ The document specified by `:id` is compared with `?to`.
 
 ### POST /document
 
-Creates new document.
+Creates a new document.
 
 #### Request
 
@@ -243,6 +243,115 @@ Fetch the list of the documents satisfying requested criteria.
    error     | [ErrorObject](object.md#errorobject)
    documents | The *array* of [DocumentObject](object.md#documentobject)s
 
+## /file
+
+### GET /file/:id
+
+Fetches the [FileObject](object.md#fileobject) whose `file.id` is requested.
+
+#### Request
+
+   Key      | Default | Description
+  ----------|---------|--------------
+   :id      |         | Specify `file.id`.
+
+#### Response
+
+   Key      | Description
+  ----------|-------------
+   error    | [ErrorObject](object.md#errorobject)
+   file     | [FileObject](object.md#fileobject)
+
+### GET /file/:id/stream
+
+Fetches the file stream of the specified file.
+
+#### Request
+
+   Key      | Default | Description
+  ----------|---------|--------------
+   :id      |         | Specify `file.id`.
+
+#### Response
+
+   The uploaded file stream.
+
+### POST /file
+
+Creates a new file.
+
+#### Request
+
+   Key      | Default | Description
+  ----------|---------|--------------
+   title    |         | The title
+   content  |         | The content in Kotodown
+   tags     |         | The *array* of [TagObject](object.md#tagobject)s without `tag.id`
+   stream   |         | The file stream
+
+#### Response
+
+   Key      | Description
+  ----------|-------------
+   error    | [ErrorObject](object.md#errorobject)
+   file     | [FileObject](object.md#fileobject)
+
+### PUT /file/:id
+
+Updates specified document.
+
+#### Request
+
+   Key      | Default | Description
+  ----------|---------|--------------
+   :id      |         | The `file.id` of the document getting updated
+   title    |         | The new title
+   content  |         | The new content in Kotodown
+   tags     |         | The new *array* of [TagObject](object.md#tagobject)s without `tag.id`
+   stream   |         | The new file stream
+
+#### Response
+
+   Key      | Description
+  ----------|-------------
+   error    | [ErrorObject](object.md#errorobject)
+   file     | The [FileObject](object.md#fileobject) after update
+
+### DELETE /file/:id
+
+Set specified file as archived.
+
+#### Request
+
+   Key      | Default | Description
+  ----------|---------|--------------
+   :id      |         | The `file.id` of the file getting removed
+
+#### Response
+
+   Key      | Description
+  ----------|-------------
+   error    | [ErrorObject](object.md#errorobject)
+
+### GET /file/search
+
+Fetch the list of the files satisfying requested criteria.
+
+#### Request
+
+   Key      | Default  | Description
+  ----------|----------|--------------
+   [?type]  | `'date'` | The type of search criteria. Following types are available: `'date'`, `'history'`, `'tag'`, `'text'`
+   [?query] |          | The value of `file.historyId`, `tag.id`, or plain text depending on the specified type
+   [?after] | `-1`     | The `file.id` of the last document in the previous search result. Used for pagination.
+
+#### Response
+
+   Key       | Description
+  -----------|-------------
+   error     | [ErrorObject](object.md#errorobject)
+   files     | The *array* of [FileObject](object.md#fileobject)s
+
 ## /tag
 
 ### PUT /tag/:id
@@ -302,7 +411,7 @@ Fetches the list of the tags containing requested text in its title.
 
 ### POST /comment
 
-Creates new comment.
+Creates a new comment.
 
 #### Request
 

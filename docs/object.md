@@ -27,6 +27,23 @@
 }
 ```
 
+## FileObject
+
+```javascript
+{
+  id:            Number,
+  historyId:     UUID,                  // The archived document and its new version share the same historyId
+  isArchived:    Boolean,
+  author:        UserObject,
+  filename:      String,
+  content:       String,                // The raw Kotodown content
+  parsedContent: String,                // The content converted to HTML
+  tags:          Array<TagObject>,
+  comments:      Array<CommentObject>,
+  createdAt:     Date
+}
+```
+
 ## TagObject
 
 ```javascript

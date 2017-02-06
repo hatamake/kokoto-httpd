@@ -10,6 +10,8 @@
     "user_name_required": "사용자 이름을 입력해야 합니다",
     "document_not_exist": "존재하지 않는 문서입니다.",
     "document_already_updated": "문서가 이미 수정되었습니다.",
+    "file_not_exist": "존재하지 않는 파일입니다.",
+    "file_already_updated": "파일이 이미 수정되었습니다.",
     "title_required": "제목을 입력해야 합니다.",
     "content_required": "내용을 입력해야 합니다.",
     "tag_not_exist": "태그가 존재하지 않습니다.",
