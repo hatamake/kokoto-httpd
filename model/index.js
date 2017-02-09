@@ -169,48 +169,33 @@ class KokotoModel {
 	}
 
 	updateTag(id, tag, callback) {
-		this.doWithTrx(
-			this.persist.updateTag, id, tag,
-			callback
-		);
+		this.doWithTrx(this.persist.updateTag, id, tag, callback);
 
 		this.cache.clearDocument();
 		this.cache.clearTagSearch();
 	}
 
 	removeTag(id, callback) {
-		this.doWithTrx(
-			this.persist.removeTag, id,
-			callback
-		);
+		this.doWithTrx(this.persist.removeTag, id, callback);
 
 		this.cache.clearDocument();
 		this.cache.clearTagSearch();
 	}
 
 	addComment(documentId, comment, callback) {
-		this.doWithTrx(
-			this.persist.addComment, documentId, comment,
-			callback
-		);
+		this.doWithTrx(this.persist.addComment, documentId, comment, callback);
 
 		this.cache.clearDocument();
 	}
 
 	updateComment(id, comment, callback) {
-		this.doWithTrx(
-			this.persist.updateComment, id, comment,
-			callback
-		);
+		this.doWithTrx(this.persist.updateComment, id, comment, callback);
 
 		this.cache.clearDocument();
 	}
 
 	removeComment(id, callback) {
-		this.doWithTrx(
-			this.persist.removeComment, id,
-			callback
-		);
+		this.doWithTrx(this.persist.removeComment, id, callback);
 
 		this.cache.clearDocument();
 	}

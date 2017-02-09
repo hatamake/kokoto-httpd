@@ -457,7 +457,10 @@ class PersistModel {
 	searchDocumentByDate(__, pagination, trx) {
 		return this.Document
 			.findAll({
-				where: { id: { $gt: pagination[0]} },
+				where: {
+					id: { $gt: pagination[0]},
+					isArchived: false
+				},
 				order: [['updatedAt', 'DESC']],
 				limit: pagination[1],
 				transaction: trx
@@ -488,7 +491,8 @@ class PersistModel {
 		return this.Document
 			.findAll({
 				where: {
-					id: { $gt: pagination[0] }
+					id: { $gt: pagination[0] },
+					isArchived: false
 				},
 				include: [{
 					model: this.Tag,
@@ -514,11 +518,12 @@ class PersistModel {
 		return this.Document
 			.findAll({
 				where: {
+					id: { $gt: pagination[0] },
 					$or: [
 						{ title: { $like: `%${text}%` } },
 						{ content: { $like: `%${text}%` } },
 					],
-					id: { $gt: pagination[0] }
+					isArchived: false
 				},
 				order: [['updatedAt', 'DESC']],
 				limit: pagination[1],
@@ -647,7 +652,10 @@ class PersistModel {
 	searchFileByDate(__, pagination, trx) {
 		return this.File
 			.findAll({
-				where: { id: { $gt: pagination[0]} },
+				where: {
+					id: { $gt: pagination[0]},
+					isArchived: false
+				},
 				order: [['updatedAt', 'DESC']],
 				limit: pagination[1],
 				transaction: trx
@@ -678,7 +686,8 @@ class PersistModel {
 		return this.File
 			.findAll({
 				where: {
-					id: { $gt: pagination[0] }
+					id: { $gt: pagination[0] },
+					isArchived: false
 				},
 				include: [{
 					model: this.Tag,
@@ -704,11 +713,12 @@ class PersistModel {
 		return this.File
 			.findAll({
 				where: {
+					id: { $gt: pagination[0] },
 					$or: [
 						{ filename: { $like: `%${text}%` } },
 						{ content: { $like: `%${text}%` } },
 					],
-					id: { $gt: pagination[0] }
+					isArchived: false
 				},
 				order: [['updatedAt', 'DESC']],
 				limit: pagination[1],
