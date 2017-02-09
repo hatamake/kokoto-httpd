@@ -1,21 +1,7 @@
 const _ = require('lodash');
 const async = require('async');
-const JsDiff = require('diff');
 
-JsDiff.diffBlocks = function(a, b) {
-	return JsDiff.diffLines(a, b).reduce(function(result, item) {
-		const lastItem = (_.last(result) || {});
-
-		if (item.added && lastItem.removed) {
-			lastItem.added = true;
-			lastItem.value = JsDiff.diffWords(lastItem.value, item.value);
-		} else {
-			result.push(item);
-		}
-
-		return result;
-	}, []);
-};
+const {diffBlocks} = require('../util/diff');
 
 module.exports = function(express, model, config) {
 	express.post(`${config.url}/document`, function(req, res) {
@@ -23,6 +9,7 @@ module.exports = function(express, model, config) {
 
 		model.addDocument({
 			authorId: req.session.user.id,
+			revision: 1,
 			title: req.body.title,
 			content: (req.body.content || ''),
 			tags: req.body.tags
@@ -67,10 +54,7 @@ module.exports = function(express, model, config) {
 			function(documents, callback) {
 				const thisContent = documents[0].content;
 				const thatContent = documents[1].content;
-
-				const diff = JsDiff.diffBlocks(thisContent, thatContent);
-
-				callback(null, diff);
+				callback(null, diffBlocks(thisContent, thatContent));
 			}
 		], function(error, diff) {
 			res.jsonAuto({

@@ -4,7 +4,8 @@ const Sequelize = require('sequelize');
 const crypto = require('crypto');
 const uuid = require('uuid/v4');
 const Hangul = require('hangul-js');
-const Parser = require('koto-parser');
+
+const Parser = require('../util/parser');
 
 const messages = require('../static/messages.json');
 const {HttpError} = require('../server/error');
@@ -37,7 +38,7 @@ function sanitize(data, include, exclude) {
 function populateAttrs(instance, attrKeys, trx) {
 	const result = instance.toJSON();
 
-	Promise.map(attrKeys, function(attrKey) {
+	return Promise.map(attrKeys, function(attrKey) {
 		return instance['get' + _.capitalize(attrKey)]({
 			transaction: trx
 		}).then(function(attrValue) {
@@ -257,7 +258,7 @@ class PersistModel {
 
 		this.Document.belongsTo(this.User, { as: 'author' });
 		this.Document.belongsToMany(this.Tag, {
-			through: 'TagLookup',
+			through: 'DocumentToTag',
 			foreignKey: 'documentId',
 			otherKey: 'tagId'
 		});
@@ -265,7 +266,7 @@ class PersistModel {
 
 		this.File.belongsTo(this.User, { as: 'author' });
 		this.File.belongsToMany(this.Tag, {
-			through: 'TagLookup',
+			through: 'FileToTag',
 			foreignKey: 'fileId',
 			otherKey: 'tagId'
 		});
@@ -274,7 +275,7 @@ class PersistModel {
 		this.Comment.belongsTo(this.User, { as: 'author' });
 
 		this.User.Instance.prototype.finalize = function(trx) {
-			Promise.resolve(sanitize(this.toJSON(), null, ['password']));
+			return Promise.resolve(sanitize(this.toJSON(), null, ['password']));
 		};
 
 		this.Document.Instance.prototype.finalize = function(trx) {
@@ -286,7 +287,7 @@ class PersistModel {
 		};
 
 		this.Tag.Instance.prototype.finalize = function(trx) {
-			Promise.resolve(sanitize(this.toJSON(), null, ['TagLookup']));
+			return Promise.resolve(sanitize(this.toJSON(), null, ['TagLookup']));
 		};
 
 		this.Comment.Instance.prototype.finalize = function(trx) {
@@ -526,20 +527,17 @@ class PersistModel {
 	}
 
 	addDocument(document, trx) {
-		return new Promise(function(resolve, reject) {
-			Parser.render(document.content, function(error, parsedContent) {
-				if (error) {
-					reject(error);
-				} else {
-					resolve(parsedContent);
-				}
-			});
-		})
-		.then((parsedContent) => {
+		return Parser.renderPromise(document.content, this).then((parsedContent) => {
 			document.parsedContent = parsedContent;
 
 			return this.Document
-				.create(sanitize(document, ['historyId', 'title', 'content', 'parsedContent']), {
+				.create(sanitize(document, [
+					'historyId',
+					'revision',
+					'title',
+					'content',
+					'parsedContent'
+				]), {
 					transaction: trx
 				})
 				.then((createdDocument) => {
@@ -719,20 +717,17 @@ class PersistModel {
 	}
 
 	addFile(file, trx) {
-		return new Promise(function(resolve, reject) {
-			Parser.render(file.content, function(error, parsedContent) {
-				if (error) {
-					reject(error);
-				} else {
-					resolve(parsedContent);
-				}
-			});
-		})
-		.then((parsedContent) => {
+		return Parser.renderPromise(file.content, this).then((parsedContent) => {
 			file.parsedContent = parsedContent;
 
 			return this.File
-				.create(sanitize(file, ['historyId', 'filename', 'content', 'parsedContent']), {
+				.create(sanitize(file, [
+					'historyId',
+					'revision',
+					'filename',
+					'content',
+					'parsedContent'
+				]), {
 					transaction: trx
 				})
 				.then((createdFile) => {
@@ -881,27 +876,26 @@ class PersistModel {
 	}
 
 	increaseOrAddTag(tag, trx) {
-		return this.Tag.findOne({
-			where: { title: tag.title },
-			transaction: trx
-		})
-		.then((foundTag) => {
-			if (foundTag) {
-				return foundTag.update({
-					count: foundTag.count + 1,
-					color: tag.color
-				}, {
-					transaction: trx
-				});
-			} else {
-				return this.Tag.create({
-					title: tag.title,
-					color: tag.color
-				}, {
-					transaction: trx
-				});
-			}
-		});
+		return this.Tag
+			.findOne({
+				where: { title: tag.title },
+				transaction: trx
+			})
+			.then((foundTag) => {
+				if (foundTag) {
+					return this.updateTag(foundTag.id, {
+						count: foundTag.count + 1,
+						color: tag.color
+					}, trx);
+				} else {
+					return this.Tag.create({
+						title: tag.title,
+						color: tag.color
+					}, {
+						transaction: trx
+					});
+				}
+			});
 	}
 
 	decreaseOrRemoveTag(id, trx) {
