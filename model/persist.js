@@ -947,7 +947,7 @@ class PersistModel {
 			})
 			.then(function(document) {
 				if (!document) {
-					throw new HttpError('document_not_exist', 404);
+					throw new HttpError('document_not_exist', 412);
 				}
 
 				return document.createComment(sanitize(comment, ['content', 'range']), {
