@@ -291,7 +291,10 @@ class PersistModel {
 		};
 
 		this.Comment.Instance.prototype.finalize = function(trx) {
-			return populateAttrs(this, ['author'], trx);
+			return populateAttrs(this, ['author'], trx).then(function(comment) {
+				comment.range = JSON.parse(comment.range);
+				return comment;
+			});
 		};
 	}
 
