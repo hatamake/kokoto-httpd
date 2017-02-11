@@ -1035,20 +1035,26 @@ class PersistModel {
 	}
 
 	removeComment(id, trx) {
-		return this.Comment
-			.findOne({
-				where: {
-					id: id
-				},
-				include: [{
-					model: this.Document,
-					attributes: [],
-					where: { isArchived: false }
-				}],
-				transaction: trx
-			})
-			.then(function(comment) {
+		return this.Comment.findOne({
+			where: { id: id },
+			transaction: trx
+		}).then((comment) => {
+			return Promise.resolve().then(() => {
 				if (!comment) {
+					return false;
+				}
+
+				return this.Document.count({
+					where: {
+						id: id,
+						isArchived: false
+					},
+					transaction: trx
+				}).then(function(count) {
+					return (count == 1);
+				});
+			}).then(function(commentFound) {
+				if (!commentFound) {
 					throw new HttpError('comment_not_exist', 404);
 				}
 
@@ -1056,6 +1062,7 @@ class PersistModel {
 					.destroy({ transaction: trx })
 					.thenReturn(comment);
 			});
+		});
 	}
 }
 
