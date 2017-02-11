@@ -69,6 +69,7 @@ module.exports = function(express, model, config) {
 
 		model.updateDocument(req.params.id, {
 			authorId: req.session.user.id,
+			revision: req.body.revision,
 			title: req.body.title,
 			content: req.body.content,
 			tags: req.body.tags

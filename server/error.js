@@ -29,6 +29,8 @@ function middleware(express, model, config) {
 class HttpError extends Error {
 	constructor(messageId, status) {
 		super(messages[messageId] || messageId);
+		this.name = 'HttpError';
+
 		this.status = status;
 	}
 }

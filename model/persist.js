@@ -566,20 +566,21 @@ class PersistModel {
 	updateDocument(id, document, trx) {
 		return this.Document
 			.findOne({
-				where: { id: id },
-				transaction: trx
+				where: { historyId: document.historyId },
+				order: [['createdAt', 'DESC']],
+				limit: 1
 			})
-			.then((foundDocument) => {
-				if (!foundDocument) {
+			.then((latestDocument) => {
+				if (!latestDocument) {
 					throw new HttpError('document_not_exist', 404);
 				}
 
-				if (foundDocument.isArchived) {
+				if (document.revision <= latestDocument) {
 					throw new HttpError('document_already_updated', 409);
 				}
 
-				if (foundDocument.content === document.content) {
-					return foundDocument.getTags({ transaction: trx }).then((foundTags) => {
+				if (latestDocument.content === document.content) {
+					return latestDocument.getTags({ transaction: trx }).then((foundTags) => {
 						foundTags = foundTags.filter(function(foundTag) {
 							return !document.tags.find(function(tag) {
 								tag.id = foundTag.id;
@@ -587,10 +588,10 @@ class PersistModel {
 							});
 						});
 
-						return [foundTags.length > 0, foundDocument];
+						return [foundTags.length > 0, latestDocument];
 					});
 				} else {
-					return [false, foundDocument];
+					return [false, latestDocument];
 				}
 			})
 			.spread((updateRequired, foundDocument) => {
@@ -785,28 +786,53 @@ class PersistModel {
 	updateFile(id, file, trx) {
 		return this.File
 			.findOne({
-				where: { id: id },
-				transaction: trx
+				where: { historyId: file.historyId },
+				order: [['createdAt', 'DESC']],
+				limit: 1
 			})
-			.then((foundFile) => {
-				if (!foundFile) {
+			.then((latestFile) => {
+				if (!latestFile) {
 					throw new HttpError('file_not_exist', 404);
 				}
 
-				if (foundFile.isArchived) {
+				if (file.revision <= latestFile) {
 					throw new HttpError('file_already_updated', 409);
 				}
 
-				return this.archiveFileInstance(foundFile, trx);
-			})
-			.then((foundFile) => {
-				file.historyId = foundFile.historyId;
-				file.revision = foundFile.revision + 1;
+				if (latestFile.content === file.content) {
+					return latestFile.getTags({ transaction: trx }).then((foundTags) => {
+						foundTags = foundTags.filter(function(foundTag) {
+							return !file.tags.find(function(tag) {
+								tag.id = foundTag.id;
+								return (tag.title === foundTag.title);
+							});
+						});
 
-				return this.addFile(file, trx);
+						return [foundTags.length > 0, latestFile];
+					});
+				} else {
+					return [false, latestFile];
+				}
+			})
+			.spread((updateRequired, foundFile) => {
+				if (updateRequired) {
+					return this.archiveFileInstance(foundFile, trx).then(() => {
+						file.historyId = foundFile.historyId;
+						file.revision = foundFile.revision + 1;
+
+						return this.addFile(file, trx);
+					});
+				} else {
+					return Promise.map(foundFile.tags, (tag) => {
+						return this.updateTag(tag.id, {
+							title: tag.title,
+							color: tag.color
+						}, trx);
+					}).thenReturn(foundFile);
+				}
 			});
 	}
-
+	
 	archiveFile(id, trx) {
 		return this.File
 			.findOne({
