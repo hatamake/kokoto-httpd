@@ -88,9 +88,9 @@ class FileToken extends BaseToken {
 
 	render(options, callback) {
 		options.model.getFile(this.id, null).then(function(file) {
-			return `<div>${file.title}</div>`;
+			callback(null, `<div>${file.title}</div>`);
 		}).catch(function(error) {
-			return `<div>${error.message}</div>`;
+			callback(null, `<div>${error.message}</div>`);
 		});
 	}
 }

@@ -303,33 +303,29 @@ class PersistModel {
 	}
 
 	getUser(id, trx) {
-		return this.User
-			.findById(id, { transaction: trx })
-			.then(function(user) {
-				if (!user) {
-					throw new HttpError('user_not_exist', 404);					
-				}
+		return this.User.findById(id, { transaction: trx }).then(function(user) {
+			if (!user) {
+				throw new HttpError('user_not_exist', 404);					
+			}
 
-				return user;
-			});
+			return user;
+		});
 	}
 
 	authUser(id, password, trx) {
-		return this.User
-			.findOne({
-				where: {
-					id: id,
-					password: shasum(password)
-				},
-				transaction: trx
-			})
-			.then(function(user) {
-				if (!user) {
-					throw new HttpError('login_failed', 401);
-				}
+		return this.User.findOne({
+			where: {
+				id: id,
+				password: shasum(password)
+			},
+			transaction: trx
+		}).then(function(user) {
+			if (!user) {
+				throw new HttpError('login_failed', 401);
+			}
 
-				return user;
-			});
+			return user;
+		});
 	}
 
 	searchUser(query, pagination, trx) {
@@ -341,537 +337,461 @@ class PersistModel {
 			lastChar = null;
 		}
 
-		return this.User
-			.findAll({
-				where: {
-					$or: {
-						id: {
-							$like: `%${query}%`,
-							$gt: pagination[0]
-						},
-						name: { $like: `%${query}%` }
-					}
-				},
-				order: [['id', 'ASC']],
-				limit: pagination[1],
-				transaction: trx
-			})
-			.filter(function(user) {
-				if (lastChar === null) {
-					return true;
+		return this.User.findAll({
+			where: {
+				$or: {
+					id: {
+						$like: `%${query}%`,
+						$gt: pagination[0]
+					},
+					name: { $like: `%${query}%` }
+				}
+			},
+			order: [['id', 'ASC']],
+			limit: pagination[1],
+			transaction: trx
+		}).filter(function(user) {
+			if (lastChar === null) {
+				return true;
+			}
+
+			return [user.id, user.name].find(function(item) {
+				const queryIndex = item.indexOf(queryIndex);
+
+				if (queryIndex < 0) {
+					return false;
 				}
 
-				return [user.id, user.name].find(function(item) {
-					const queryIndex = item.indexOf(queryIndex);
+				const charAfterQuery = user.id.substr(queryIndex + 1, 1);
 
-					if (queryIndex < 0) {
-						return false;
-					}
-
-					const charAfterQuery = user.id.substr(queryIndex + 1, 1);
-
-					if (charAfterQuery) {
-						return Hangul.search(charAfterQuery, lastChar);
-					} else {
-						return false;
-					}
-				});
+				if (charAfterQuery) {
+					return Hangul.search(charAfterQuery, lastChar);
+				} else {
+					return false;
+				}
 			});
+		});
 	}
 
 	addUser(user, trx) {
-		return this.User
-			.create(sanitize(user, ['id', 'password', 'name']), {
-				transaction: trx
-			})
-			.catch(function(error) {
-				if (error.name === 'SequelizeUniqueConstraintError') {
-					error.message = messages.user_id_exist;
-				}
+		return this.User.create(sanitize(user, ['id', 'password', 'name']), {
+			transaction: trx
+		}).catch(function(error) {
+			if (error.name === 'SequelizeUniqueConstraintError') {
+				error.message = messages.user_id_exist;
+			}
 
-				throw error;
-			});
+			throw error;
+		});
 	}
 
 	updateUser(id, user, trx) {
-		return this.User
-			.update(sanitize(user, null, ['id']), {
-				where: { id: id },
-				transaction: trx
-			})
-			.spread((count) => {
-				if (count === 0) {
-					throw new HttpError('user_not_exist', 404);
-				}
+		return this.User.update(sanitize(user, null, ['id']), {
+			where: { id: id },
+			transaction: trx
+		}).spread((count) => {
+			if (count == 0) {
+				throw new HttpError('user_not_exist', 404);
+			}
 
-				return this.getUser(id, trx);
-			});
+			return this.getUser(id, trx);
+		});
 	}
 
 	removeUser(id, trx) {
-		return this.User
-			.findById(id, { transaction: trx })
-			.then(function(user) {
-				if (!user) {
-					throw new HttpError('user_not_exist', 404);
-				}
+		return this.User.findById(id, { transaction: trx }).then(function(user) {
+			if (!user) {
+				throw new HttpError('user_not_exist', 404);
+			}
 
-				return user
-					.destroy({ transaction: trx })
-					.thenReturn(user);
-			});
+			return user.destroy({ transaction: trx }).thenReturn(user);
+		});
 	}
 
 	getDocument(id, trx) {
-		return this.Document
-			.findById(id, { transaction: trx })
-			.then((document) => {
-				if (!document) {
-					throw new HttpError('document_not_exist', 404);
-				}
+		return this.Document.findById(id, { transaction: trx }).then((document) => {
+			if (!document) {
+				throw new HttpError('document_not_exist', 404);
+			}
 
-				return document;
-			});
+			return document;
+		});
 	}
 
 	searchDocument(type, query, pagination, trx) {
-		let search;
-
-		switch (type) {
-		case 'history':
-			search = this.searchDocumentByHistoryId;
-			break;
-
-		case 'tag':
-			search = this.searchDocumentByTagId;
-			break;
-
-		case 'text':
-			search = this.searchDocumentByText;
-			break;
-
-		default:
-			search = this.searchDocumentByDate;
-		}
-		
-		return search.call(this, query, pagination, trx);
+		return (
+			({
+				'history': this.searchDocumentByHistoryId,
+				'tag': this.searchDocumentByTagId,
+				'text': this.searchDocumentByText
+			})[type] || this.searchDocumentByDate
+		).call(this, query, pagination, trx);
 	}
 
 	searchDocumentByDate(__, pagination, trx) {
-		return this.Document
-			.findAll({
-				where: {
-					id: { $gt: pagination[0]},
-					isArchived: false
-				},
-				order: [['updatedAt', 'DESC']],
-				limit: pagination[1],
-				transaction: trx
-			});
+		return this.Document.findAll({
+			where: {
+				id: { $gt: pagination[0]},
+				isArchived: false
+			},
+			order: [['updatedAt', 'DESC']],
+			limit: pagination[1],
+			transaction: trx
+		});
 	}
 
 	searchDocumentByHistoryId(historyId, pagination, trx) {
-		return this.Document
-			.findAll({
-				where: {
-					id: { $gt: pagination[0] },
-					historyId: historyId
-				},
-				order: [['updatedAt', 'DESC']],
-				limit: pagination[1],
-				transaction: trx
-			})
-			.then(function(documents) {
-				if (documents.length === 0) {
-					throw new HttpError('document_not_exist', 404);
-				}
+		return this.Document.findAll({
+			where: {
+				id: { $gt: pagination[0] },
+				historyId: historyId
+			},
+			order: [['updatedAt', 'DESC']],
+			limit: pagination[1],
+			transaction: trx
+		}).then(function(documents) {
+			if (documents.length === 0) {
+				throw new HttpError('document_not_exist', 404);
+			}
 
-				return documents;
-			});
+			return documents;
+		});
 	}
 
 	searchDocumentByTagId(tagId, pagination, trx) {
-		return this.Document
-			.findAll({
+		return this.Document.findAll({
+			where: {
+				id: { $gt: pagination[0] },
+				isArchived: false
+			},
+			include: [{
+				model: this.Tag,
+				attributes: [],
 				where: {
-					id: { $gt: pagination[0] },
-					isArchived: false
-				},
-				include: [{
-					model: this.Tag,
-					attributes: [],
-					where: {
-						id: tagId
-					}
-				}],
-				limit: pagination[1],
-				order: [['updatedAt', 'DESC']],
-				transaction: trx
-			})
-			.then(function(documents) {
-				if (documents.length === 0) {
-					throw new HttpError('tag_not_exist', 404);
+					id: tagId
 				}
+			}],
+			limit: pagination[1],
+			order: [['updatedAt', 'DESC']],
+			transaction: trx
+		}).then(function(documents) {
+			if (documents.length === 0) {
+				throw new HttpError('tag_not_exist', 404);
+			}
 
-				return documents;
-			});
+			return documents;
+		});
 	}
 
 	searchDocumentByText(text, pagination, trx) {
-		return this.Document
-			.findAll({
-				where: {
-					id: { $gt: pagination[0] },
-					$or: [
-						{ title: { $like: `%${text}%` } },
-						{ content: { $like: `%${text}%` } },
-					],
-					isArchived: false
-				},
-				order: [['updatedAt', 'DESC']],
-				limit: pagination[1],
-				transaction: trx
-			});
+		return this.Document.findAll({
+			where: {
+				id: { $gt: pagination[0] },
+				$or: [
+					{ title: { $like: `%${text}%` } },
+					{ content: { $like: `%${text}%` } },
+				],
+				isArchived: false
+			},
+			order: [['updatedAt', 'DESC']],
+			limit: pagination[1],
+			transaction: trx
+		});
 	}
 
 	addDocument(document, trx) {
 		return Parser.renderPromise(document.content, this).then((parsedContent) => {
 			document.parsedContent = parsedContent;
 
-			return this.Document
-				.create(sanitize(document, [
-					'historyId',
-					'revision',
-					'title',
-					'content',
-					'parsedContent'
-				]), {
-					transaction: trx
-				})
-				.then((createdDocument) => {
-					return Promise.all([
-						createdDocument.setAuthor(document.authorId, { transaction: trx }),
+			return this.Document.create(sanitize(document, [
+				'historyId',
+				'revision',
+				'title',
+				'content',
+				'parsedContent'
+			]), {
+				transaction: trx
+			}).then((createdDocument) => {
+				return Promise.all([
+					createdDocument.setAuthor(document.authorId, { transaction: trx }),
 
-						Promise.map(document.tags, (tag) => {
-							return this.increaseOrAddTag(tag, trx);
-						}).then(function(tags) {
-							return createdDocument.setTags(tags, { transaction: trx });
-						})
-					])
-					.thenReturn(createdDocument);
-				});
+					Promise.map(document.tags, (tag) => {
+						return this.increaseOrAddTag(tag, trx);
+					}).then(function(tags) {
+						return createdDocument.setTags(tags, { transaction: trx });
+					})
+				]).thenReturn(createdDocument);
+			});
 		});
 	}
 
 	updateDocument(id, document, trx) {
-		return this.Document
-			.findOne({
-				where: { historyId: document.historyId },
-				order: [['createdAt', 'DESC']],
-				limit: 1
-			})
-			.then((latestDocument) => {
-				if (!latestDocument) {
-					throw new HttpError('document_not_exist', 404);
-				}
+		return this.Document.findOne({
+			where: { historyId: document.historyId },
+			order: [['createdAt', 'DESC']],
+			limit: 1
+		}).then((latestDocument) => {
+			if (!latestDocument) {
+				throw new HttpError('document_not_exist', 404);
+			}
 
-				if (document.revision <= latestDocument) {
-					throw new HttpError('document_already_updated', 409);
-				}
+			if (document.revision <= latestDocument) {
+				throw new HttpError('document_already_updated', 409);
+			}
 
-				if (latestDocument.content === document.content) {
-					return latestDocument.getTags({ transaction: trx }).then((foundTags) => {
-						foundTags = foundTags.filter(function(foundTag) {
-							return !document.tags.find(function(tag) {
-								tag.id = foundTag.id;
-								return (tag.title === foundTag.title);
-							});
+			if (latestDocument.content === document.content) {
+				return latestDocument.getTags({ transaction: trx }).then((foundTags) => {
+					foundTags = foundTags.filter(function(foundTag) {
+						return !document.tags.find(function(tag) {
+							tag.id = foundTag.id;
+							return (tag.title === foundTag.title);
 						});
-
-						return [foundTags.length > 0, latestDocument];
 					});
-				} else {
-					return [false, latestDocument];
-				}
-			})
-			.spread((updateRequired, foundDocument) => {
-				if (updateRequired) {
-					return this.archiveDocumentInstance(foundDocument, trx).then(() => {
-						document.historyId = foundDocument.historyId;
-						document.revision = foundDocument.revision + 1;
 
-						return this.addDocument(document, trx);
-					});
-				} else {
-					return Promise.map(document.tags, (tag) => {
-						return this.updateTag(tag.id, {
-							title: tag.title,
-							color: tag.color
-						}, trx);
-					}).thenReturn(foundDocument);
-				}
-			});
+					return [foundTags.length > 0, latestDocument];
+				});
+			} else {
+				return [false, latestDocument];
+			}
+		}).spread((updateRequired, foundDocument) => {
+			if (updateRequired) {
+				return this.archiveDocumentInstance(foundDocument, trx).then(() => {
+					document.historyId = foundDocument.historyId;
+					document.revision = foundDocument.revision + 1;
+
+					return this.addDocument(document, trx);
+				});
+			} else {
+				return Promise.map(document.tags, (tag) => {
+					return this.updateTag(tag.id, {
+						title: tag.title,
+						color: tag.color
+					}, trx);
+				}).thenReturn(foundDocument);
+			}
+		});
 	}
 
 	archiveDocument(id, trx) {
-		return this.Document
-			.findOne({
-				where: {
-					id: id,
-					isArchived: false
-				},
-				transaction: trx
-			})
-			.then((foundDocument) => {
-				if (!foundDocument) {
-					throw new HttpError('document_not_exist', 404);
-				}
+		return this.Document.findOne({
+			where: {
+				id: id,
+				isArchived: false
+			},
+			transaction: trx
+		}).then((foundDocument) => {
+			if (!foundDocument) {
+				throw new HttpError('document_not_exist', 404);
+			}
 
-				return this.archiveDocumentInstance(foundDocument, trx);
-			});
+			return this.archiveDocumentInstance(foundDocument, trx);
+		});
 	}
 
 	archiveDocumentInstance(document, trx) {
-		return document
-			.update({ isArchived: true }, { transaction: trx })
-			.then(() => {
-				return document.getTags({ transaction: trx }).map((tag) => {
-					return this.decreaseOrRemoveTag(tag.id, trx);
-				});
-			})
-			.thenReturn(document);
+		return document.update({ isArchived: true }, { transaction: trx }).then(() => {
+			return document.getTags({ transaction: trx }).map((tag) => {
+				return this.decreaseOrRemoveTag(tag.id, trx);
+			});
+		}).thenReturn(document);
 	}
 
 	getFile(id, trx) {
-		return this.File
-			.findById(id, { transaction: trx })
-			.then((file) => {
-				if (!file) {
-					throw new HttpError('file_not_exist', 404);
-				}
+		return this.File.findById(id, { transaction: trx }).then((file) => {
+			if (!file) {
+				throw new HttpError('file_not_exist', 404);
+			}
 
-				return file;
-			});
+			return file;
+		});
 	}
 
 	searchFile(type, query, pagination, trx) {
-		let search;
-
-		switch (type) {
-		case 'history':
-			search = this.searchFileByHistoryId;
-			break;
-
-		case 'tag':
-			search = this.searchFileByTagId;
-			break;
-
-		case 'text':
-			search = this.searchFileByText;
-			break;
-
-		default:
-			search = this.searchFileByDate;
-		}
-
-		return search.call(this, query, pagination, trx);
+		return (
+			({
+				'history': this.searchFileByHistoryId,
+				'tag': this.searchFileByTagId,
+				'text': this.searchFileByText
+			})[type] || this.searchFileByDate
+		).call(this, query, pagination, trx);
 	}
 
 	searchFileByDate(__, pagination, trx) {
-		return this.File
-			.findAll({
-				where: {
-					id: { $gt: pagination[0]},
-					isArchived: false
-				},
-				order: [['updatedAt', 'DESC']],
-				limit: pagination[1],
-				transaction: trx
-			});
+		return this.File.findAll({
+			where: {
+				id: { $gt: pagination[0]},
+				isArchived: false
+			},
+			order: [['updatedAt', 'DESC']],
+			limit: pagination[1],
+			transaction: trx
+		});
 	}
 
 	searchFileByHistoryId(historyId, pagination, trx) {
-		return this.File
-			.findAll({
-				where: {
-					id: { $gt: pagination[0] },
-					historyId: historyId
-				},
-				order: [['updatedAt', 'DESC']],
-				limit: pagination[1],
-				transaction: trx
-			})
-			.then(function(files) {
-				if (files.length === 0) {
-					throw new HttpError('file_not_exist', 404);
-				}
+		return this.File.findAll({
+			where: {
+				id: { $gt: pagination[0] },
+				historyId: historyId
+			},
+			order: [['updatedAt', 'DESC']],
+			limit: pagination[1],
+			transaction: trx
+		}).then(function(files) {
+			if (files.length === 0) {
+				throw new HttpError('file_not_exist', 404);
+			}
 
-				return files;
-			});
+			return files;
+		});
 	}
 
 	searchFileByTagId(tagId, pagination, trx) {
-		return this.File
-			.findAll({
+		return this.File.findAll({
+			where: {
+				id: { $gt: pagination[0] },
+				isArchived: false
+			},
+			include: [{
+				model: this.Tag,
+				attributes: [],
 				where: {
-					id: { $gt: pagination[0] },
-					isArchived: false
-				},
-				include: [{
-					model: this.Tag,
-					attributes: [],
-					where: {
-						id: tagId
-					}
-				}],
-				limit: pagination[1],
-				order: [['updatedAt', 'DESC']],
-				transaction: trx
-			})
-			.then(function(files) {
-				if (files.length === 0) {
-					throw new HttpError('tag_not_exist', 404);
+					id: tagId
 				}
+			}],
+			limit: pagination[1],
+			order: [['updatedAt', 'DESC']],
+			transaction: trx
+		}).then(function(files) {
+			if (files.length === 0) {
+				throw new HttpError('tag_not_exist', 404);
+			}
 
-				return files;
-			});
+			return files;
+		});
 	}
 
 	searchFileByText(text, pagination, trx) {
-		return this.File
-			.findAll({
-				where: {
-					id: { $gt: pagination[0] },
-					$or: [
-						{ filename: { $like: `%${text}%` } },
-						{ content: { $like: `%${text}%` } },
-					],
-					isArchived: false
-				},
-				order: [['updatedAt', 'DESC']],
-				limit: pagination[1],
-				transaction: trx
-			});
+		return this.File.findAll({
+			where: {
+				id: { $gt: pagination[0] },
+				$or: [
+					{ filename: { $like: `%${text}%` } },
+					{ content: { $like: `%${text}%` } },
+				],
+				isArchived: false
+			},
+			order: [['updatedAt', 'DESC']],
+			limit: pagination[1],
+			transaction: trx
+		});
 	}
 
 	addFile(file, trx) {
 		return Parser.renderPromise(file.content, this).then((parsedContent) => {
 			file.parsedContent = parsedContent;
 
-			return this.File
-				.create(sanitize(file, [
-					'historyId',
-					'revision',
-					'filename',
-					'content',
-					'parsedContent'
-				]), {
-					transaction: trx
-				})
-				.then((createdFile) => {
-					return Promise.all([
-						createdFile.setAuthor(file.authorId, { transaction: trx }),
+			return this.File.create(sanitize(file, [
+				'historyId',
+				'revision',
+				'filename',
+				'content',
+				'parsedContent'
+			]), {
+				transaction: trx
+			}).then((createdFile) => {
+				return Promise.all([
+					createdFile.setAuthor(file.authorId, { transaction: trx }),
 
-						Promise.map(file.tags, (tag) => {
-							return this.increaseOrAddTag(tag, trx);
-						}).then(function(tags) {
-							return createdFile.setTags(tags, { transaction: trx });
-						})
-					])
-					.thenReturn(createdFile);
-				});
+					Promise.map(file.tags, (tag) => {
+						return this.increaseOrAddTag(tag, trx);
+					}).then(function(tags) {
+						return createdFile.setTags(tags, { transaction: trx });
+					})
+				]).thenReturn(createdFile);
+			});
 		});
 	}
 
 	updateFile(id, file, trx) {
-		return this.File
-			.findOne({
-				where: { historyId: file.historyId },
-				order: [['createdAt', 'DESC']],
-				limit: 1
-			})
-			.then((latestFile) => {
-				if (!latestFile) {
-					throw new HttpError('file_not_exist', 404);
-				}
+		return this.File.findOne({
+			where: { historyId: file.historyId },
+			order: [['createdAt', 'DESC']],
+			limit: 1
+		}).then((latestFile) => {
+			if (!latestFile) {
+				throw new HttpError('file_not_exist', 404);
+			}
 
-				if (file.revision <= latestFile) {
-					throw new HttpError('file_already_updated', 409);
-				}
+			if (file.revision <= latestFile) {
+				throw new HttpError('file_already_updated', 409);
+			}
 
-				if (latestFile.content === file.content) {
-					return latestFile.getTags({ transaction: trx }).then((foundTags) => {
-						foundTags = foundTags.filter(function(foundTag) {
-							return !file.tags.find(function(tag) {
-								tag.id = foundTag.id;
-								return (tag.title === foundTag.title);
-							});
+			if (latestFile.content === file.content) {
+				return latestFile.getTags({ transaction: trx }).then((foundTags) => {
+					foundTags = foundTags.filter(function(foundTag) {
+						return !file.tags.find(function(tag) {
+							tag.id = foundTag.id;
+							return (tag.title === foundTag.title);
 						});
-
-						return [foundTags.length > 0, latestFile];
 					});
-				} else {
-					return [false, latestFile];
-				}
-			})
-			.spread((updateRequired, foundFile) => {
-				if (updateRequired) {
-					return this.archiveFileInstance(foundFile, trx).then(() => {
-						file.historyId = foundFile.historyId;
-						file.revision = foundFile.revision + 1;
 
-						return this.addFile(file, trx);
-					});
-				} else {
-					return Promise.map(foundFile.tags, (tag) => {
-						return this.updateTag(tag.id, {
-							title: tag.title,
-							color: tag.color
-						}, trx);
-					}).thenReturn(foundFile);
-				}
-			});
+					return [foundTags.length > 0, latestFile];
+				});
+			} else {
+				return [false, latestFile];
+			}
+		}).spread((updateRequired, foundFile) => {
+			if (updateRequired) {
+				return this.archiveFileInstance(foundFile, trx).then(() => {
+					file.historyId = foundFile.historyId;
+					file.revision = foundFile.revision + 1;
+
+					return this.addFile(file, trx);
+				});
+			} else {
+				return Promise.map(foundFile.tags, (tag) => {
+					return this.updateTag(tag.id, {
+						title: tag.title,
+						color: tag.color
+					}, trx);
+				}).thenReturn(foundFile);
+			}
+		});
 	}
 	
 	archiveFile(id, trx) {
-		return this.File
-			.findOne({
-				where: {
-					id: id,
-					isArchived: false
-				},
-				transaction: trx
-			})
-			.then((foundFile) => {
-				if (!foundFile) {
-					throw new HttpError('file_not_exist', 404);
-				}
+		return this.File.findOne({
+			where: {
+				id: id,
+				isArchived: false
+			},
+			transaction: trx
+		}).then((foundFile) => {
+			if (!foundFile) {
+				throw new HttpError('file_not_exist', 404);
+			}
 
-				return this.archiveFileInstance(foundFile, trx);
-			});
+			return this.archiveFileInstance(foundFile, trx);
+		});
 	}
 
 	archiveFileInstance(file, trx) {
-		return file
-			.update({ isArchived: true }, { transaction: trx })
-			.then(() => {
-				return file.getTags({ transaction: trx }).map((tag) => {
-					return this.decreaseOrRemoveTag(tag.id, trx);
-				});
-			})
-			.thenReturn(file);
+		return file.update({ isArchived: true }, { transaction: trx }).then(() => {
+			return file.getTags({ transaction: trx }).map((tag) => {
+				return this.decreaseOrRemoveTag(tag.id, trx);
+			});
+		}).thenReturn(file);
 	}
 
 	getTag(id, trx) {
-		return this.Tag
-			.findById(id, { transaction: trx })
-			.then(function(tag) {
-				if (!tag) {
-					throw new HttpError('tag_not_exist', 404);
-				}
+		return this.Tag.findById(id, { transaction: trx }).then(function(tag) {
+			if (!tag) {
+				throw new HttpError('tag_not_exist', 404);
+			}
 
-				return tag;
-			});
+			return tag;
+		});
 	}
 
 	searchTag(query, pagination, trx) {
@@ -883,155 +803,136 @@ class PersistModel {
 			lastChar = null;
 		}
 
-		return this.Tag
-			.findAll({
-				where: {
-					id: { $gt: pagination[0] },
-					title: { $like: `%${query}%` }
-				},
-				order: [['title', 'ASC']],
-				limit: pagination[1],
-				transaction: trx
-			})
-			.filter(function(tag) {
-				if (lastChar === null) {
-					return true;
-				}
+		return this.Tag.findAll({
+			where: {
+				id: { $gt: pagination[0] },
+				title: { $like: `%${query}%` }
+			},
+			order: [['title', 'ASC']],
+			limit: pagination[1],
+			transaction: trx
+		}).filter(function(tag) {
+			if (lastChar === null) {
+				return true;
+			}
 
-				const queryIndex = tag.title.indexOf(query);
-				const charAfterQuery = tag.title.substr(queryIndex + 1, 1);
+			const queryIndex = tag.title.indexOf(query);
+			const charAfterQuery = tag.title.substr(queryIndex + 1, 1);
 
-				if (charAfterQuery) {
-					return Hangul.search(charAfterQuery, lastChar);
-				} else {
-					return false;
-				}
-			});
+			if (charAfterQuery) {
+				return Hangul.search(charAfterQuery, lastChar);
+			} else {
+				return false;
+			}
+		});
 	}
 
 	updateTag(id, tag, trx) {
-		return this.Tag
-			.update(sanitize(tag, ['title', 'color']), {
-				where: { id: id },
-				transaction: trx
-			})
-			.spread((count) => {
-				if (count === 0) {
-					throw new HttpError('tag_not_exist', 404);
-				}
+		return this.Tag.update(sanitize(tag, ['title', 'color']), {
+			where: { id: id },
+			transaction: trx
+		}).spread((count) => {
+			if (count == 0) {
+				throw new HttpError('tag_not_exist', 404);
+			}
 
-				return this.getTag(id, trx);
-			});
+			return this.getTag(id, trx);
+		});
 	}
 
 	removeTag(id, trx) {
-		return this.Tag
-			.findById(id, { transaction: trx })
-			.then(function(tag) {
-				if (!tag) {
-					throw new HttpError('tag_not_exist', 404);
-				}
+		return this.Tag.findById(id, { transaction: trx }).then(function(tag) {
+			if (!tag) {
+				throw new HttpError('tag_not_exist', 404);
+			}
 
-				return tag
-					.destroy({ transaction: trx })
-					.thenReturn(tag);
-			});
+			return tag.destroy({ transaction: trx }).thenReturn(tag);
+		});
 	}
 
 	increaseOrAddTag(tag, trx) {
-		return this.Tag
-			.findOne({
-				where: { title: tag.title },
-				transaction: trx
-			})
-			.then((foundTag) => {
-				if (foundTag) {
-					return this.updateTag(foundTag.id, {
-						count: foundTag.count + 1,
-						color: tag.color
-					}, trx);
-				} else {
-					return this.Tag.create({
-						title: tag.title,
-						color: tag.color
-					}, {
-						transaction: trx
-					});
-				}
-			});
+		return this.Tag.findOne({
+			where: { title: tag.title },
+			transaction: trx
+		}).then((foundTag) => {
+			if (foundTag) {
+				return this.updateTag(foundTag.id, {
+					count: foundTag.count + 1,
+					color: tag.color
+				}, trx);
+			} else {
+				return this.Tag.create({
+					title: tag.title,
+					color: tag.color
+				}, {
+					transaction: trx
+				});
+			}
+		});
 	}
 
 	decreaseOrRemoveTag(id, trx) {
-		return this.Tag
-			.findById(id, { transaction: trx })
-			.then(function(tag) {
-				if (!tag) {
-					throw new HttpError('tag_not_exist', 404);
-				}
+		return this.Tag.findById(id, { transaction: trx }).then(function(tag) {
+			if (!tag) {
+				throw new HttpError('tag_not_exist', 404);
+			}
 
-				if (tag.count === 1) {
-					return tag.destroy({ transaction: trx }).thenReturn(tag);
-				}
+			if (tag.count == 1) {
+				return tag.destroy({ transaction: trx }).thenReturn(tag);
+			}
 
-				return tag.update({ count: tag.count - 1 }, { transaction: trx });
-			});
+			return tag.update({ count: tag.count - 1 }, { transaction: trx });
+		});
 	}
 
 	getComment(id, trx) {
-		return this.Comment
-			.findById(id, { transaction: trx })
-			.then(function(comment) {
-				if (!comment) {
-					throw new HttpError('comment_not_exist', 404);
-				}
+		return this.Comment.findById(id, { transaction: trx }).then(function(comment) {
+			if (!comment) {
+				throw new HttpError('comment_not_exist', 404);
+			}
 
-				return comment;
-			});
+			return comment;
+		});
 	}
 
 	addComment(documentId, comment, trx) {
-		return this.Document
-			.findOne({
-				where: {
-					id: documentId,
-					isArchived: false
-				},
-				transaction: trx
-			})
-			.then(function(document) {
-				if (!document) {
-					throw new HttpError('document_not_exist', 412);
-				}
+		return this.Document.findOne({
+			where: {
+				id: documentId,
+				isArchived: false
+			},
+			transaction: trx
+		}).then(function(document) {
+			if (!document) {
+				throw new HttpError('document_not_exist', 412);
+			}
 
-				return document.createComment(sanitize(comment, ['content', 'range']), {
-					transaction: trx
-				});
-			})
-			.then(function(addedComment) {
-				return addedComment
-					.setAuthor(comment.authorId, { transaction: trx })
-					.thenReturn(addedComment);
+			return document.createComment(sanitize(comment, ['content', 'range']), {
+				transaction: trx
 			});
+		}).then(function(addedComment) {
+			return addedComment.setAuthor(comment.authorId, {
+				transaction: trx
+			}).thenReturn(addedComment);
+		});
 	}
 
 	updateComment(id, comment, trx) {
-		return this.Comment
-			.update(sanitize(comment, ['content', 'range']), {
-				where: { id: id },
-				include: [{
-					model: this.Document,
-					attributes: [],
-					where: { isArchived: false }
-				}],
-				transaction: trx
-			})
-			.spread((count) => {
-				if (count === 0) {
-					throw new HttpError('comment_not_exist', 404);
-				}
+		return this.Comment.update(sanitize(comment, ['content', 'range']), {
+			where: { id: id },
+			include: [{
+				model: this.Document,
+				attributes: [],
+				where: { isArchived: false }
+			}],
+			transaction: trx
+		}).spread((count) => {
+			if (count == 0) {
+				throw new HttpError('comment_not_exist', 404);
+			}
 
-				return this.getComment(id, trx);
-			});
+			return this.getComment(id, trx);
+		});
 	}
 
 	removeComment(id, trx) {
@@ -1058,9 +959,7 @@ class PersistModel {
 					throw new HttpError('comment_not_exist', 404);
 				}
 
-				return comment
-					.destroy({ transaction: trx })
-					.thenReturn(comment);
+				return comment.destroy({ transaction: trx }).thenReturn(comment);
 			});
 		});
 	}
