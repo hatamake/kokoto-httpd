@@ -578,13 +578,37 @@ class PersistModel {
 					throw new HttpError('document_already_updated', 409);
 				}
 
-				return this.archiveDocumentInstance(foundDocument, trx);
-			})
-			.then((foundDocument) => {
-				document.historyId = foundDocument.historyId;
-				document.revision = foundDocument.revision + 1;
+				if (foundDocument.content === document.content) {
+					return foundDocument.getTags({ transaction: trx }).then((foundTags) => {
+						foundTags = foundTags.filter(function(foundTag) {
+							return !document.tags.find(function(tag) {
+								tag.id = foundTag.id;
+								return (tag.title === foundTag.title);
+							});
+						});
 
-				return this.addDocument(document, trx);
+						return [foundTags.length > 0, foundDocument];
+					});
+				} else {
+					return [false, foundDocument];
+				}
+			})
+			.spread((updateRequired, foundDocument) => {
+				if (updateRequired) {
+					return this.archiveDocumentInstance(foundDocument, trx).then(() => {
+						document.historyId = foundDocument.historyId;
+						document.revision = foundDocument.revision + 1;
+
+						return this.addDocument(document, trx);
+					});
+				} else {
+					return Promise.map(document.tags, (tag) => {
+						return this.updateTag(tag.id, {
+							title: tag.title,
+							color: tag.color
+						}, trx);
+					}).thenReturn(foundDocument);
+				}
 			});
 	}
 
