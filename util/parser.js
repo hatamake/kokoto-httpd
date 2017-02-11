@@ -1,5 +1,16 @@
 const Promise = require('bluebird');
+
 const Parser = require('koto-parser');
+const InlineParser = require('koto-parser/lib/core/inline');
+
+const {BaseBlock} = require('koto-parser/lib/blocks/base');
+
+const {CodeToken} = require('koto-parser/lib/tokens/code');
+const {BoldToken} = require('koto-parser/lib/tokens/bold');
+const {ItalicToken} = require('koto-parser/lib/tokens/italic');
+const {UnderlineToken} = require('koto-parser/lib/tokens/underline');
+const {StrikeToken} = require('koto-parser/lib/tokens/strike');
+const {LinkToken} = require('koto-parser/lib/tokens/link');
 const {BaseToken} = require('koto-parser/lib/tokens/base');
 
 const defaultTokenTypes = require('koto-parser/lib/tokens');
@@ -11,16 +22,38 @@ function render(content, model, callback) {
 	}, callback);
 }
 
-function renderPromise(content, model) {
-	return new Promise((resolve, reject) => {
-		render(content, model, function(error, result) {
-			if (error) {
-				reject(error);
-			} else {
-				resolve(result);
-			}
-		});
-	});
+function renderInline(content, model, callback) {
+	Parser.render(content, {
+		blockTypes: [CommentBlock],
+		tokenTypes: [CodeToken, BoldToken, ItalicToken, UnderlineToken, StrikeToken, LinkToken],
+		model: model
+	}, callback);
+}
+
+class CommentBlock extends BaseBlock {
+
+	constructor(contentTokens) {
+		super();
+
+		this.tokens = contentTokens;
+	}
+
+	static match(scanner) {
+		return true;
+	}
+
+	static parse(scanner, match, options) {
+		scanner.mark();
+		scanner.position = scanner.length;
+		const content = scanner.pop();
+		const contentTokens = InlineParser.parse(content, options);
+
+		return new CommentBlock(contentTokens);
+	}
+
+	render(options, callback) {
+		InlineParser.render(this.contentTokens, options, callback);
+	}
 }
 
 class FileToken extends BaseToken {
@@ -96,4 +129,6 @@ class FileToken extends BaseToken {
 }
 
 exports.render = render;
-exports.renderPromise = renderPromise;
+exports.renderPromise = Promise.promisify(render);
+exports.renderInline = renderInline;
+exports.renderInlinePromise = Promise.promisify(renderInline);

@@ -209,6 +209,15 @@ class PersistModel {
 					this.setDataValue('content', notBlank(value) ? value : '');
 				}
 			},
+			parsedContent: {
+				type: Sequelize.TEXT,
+				validate: {
+					notEmpty: { msg: messages.content_required }
+				},
+				set: function(value) {
+					this.setDataValue('parsedContent', notBlank(value) ? value : '');
+				}
+			},
 			range: {
 				type: Sequelize.STRING,
 				validate: {
@@ -688,7 +697,7 @@ class PersistModel {
 	}
 
 	addFile(file, trx) {
-		return Parser.renderPromise(file.content, this).then((parsedContent) => {
+		return Parser.renderInlinePromise(file.content, this).then((parsedContent) => {
 			file.parsedContent = parsedContent;
 
 			return this.File.create(sanitize(file, [
@@ -907,8 +916,16 @@ class PersistModel {
 				throw new HttpError('document_not_exist', 412);
 			}
 
-			return document.createComment(sanitize(comment, ['content', 'range']), {
-				transaction: trx
+			return Parser.renderPromise(comment.content, this).then((parsedContent) => {
+				comment.parsedContent = parsedContent;
+
+				return document.createComment(sanitize(comment, [
+					'content',
+					'parsedContent',
+					'range'
+				]), {
+					transaction: trx
+				});
 			});
 		}).then(function(addedComment) {
 			return addedComment.setAuthor(comment.authorId, {
