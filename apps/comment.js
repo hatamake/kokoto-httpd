@@ -19,11 +19,9 @@ module.exports = function(express, model, config) {
 	express.put(`${config.url}/comment/:id`, function(req, res) {
 		if (res.shouldSignin()) { return; }
 
-		const {id, content} = req.body;
-
-		model.updateComment(id, {
+		model.updateComment(req.params.id, {
 			authorId: req.session.user.id,
-			content: content
+			content: req.body.content
 		}, function(error, comment) {
 			res.jsonAuto({
 				error: error,
