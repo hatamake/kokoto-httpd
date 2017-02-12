@@ -549,18 +549,21 @@ class PersistModel {
 			}
 
 			if (latestDocument.content === document.content) {
-				return latestDocument.getTags({ transaction: trx }).then((foundTags) => {
-					foundTags = foundTags.filter(function(foundTag) {
-						return !document.tags.find(function(tag) {
-							tag.id = foundTag.id;
-							return (tag.title === foundTag.title);
-						});
-					});
+				return latestDocument.getTags({ transaction: trx }).filter(function(foundTag) {
+					return !document.tags.find(function(tag) {
+						const exists = (tag.title === foundTag.title);
 
+						if (exists) {
+							tag.id = foundTag.id;
+						}
+
+						return exists;
+					});
+				}).then((foundTags) => {
 					return [foundTags.length > 0, latestDocument];
 				});
 			} else {
-				return [false, latestDocument];
+				return [true, latestDocument];
 			}
 		}).spread((updateRequired, foundDocument) => {
 			if (updateRequired) {
@@ -737,18 +740,21 @@ class PersistModel {
 			}
 
 			if (latestFile.content === file.content) {
-				return latestFile.getTags({ transaction: trx }).then((foundTags) => {
-					foundTags = foundTags.filter(function(foundTag) {
-						return !file.tags.find(function(tag) {
-							tag.id = foundTag.id;
-							return (tag.title === foundTag.title);
-						});
-					});
+				return latestFile.getTags({ transaction: trx }).filter(function(foundTag) {
+					return !file.tags.find(function(tag) {
+						const exists = (tag.title === foundTag.title);
 
+						if (exists) {
+							tag.id = foundTag.id;
+						}
+
+						return exists;
+					});
+				}).then((foundTags) => {
 					return [foundTags.length > 0, latestFile];
 				});
 			} else {
-				return [false, latestFile];
+				return [true, latestFile];
 			}
 		}).spread((updateRequired, foundFile) => {
 			if (updateRequired) {

@@ -338,13 +338,14 @@ Updates specified document.
 
 #### Request
 
-   Key      | Default | Description
-  ----------|---------|--------------
-   :id      |         | The `file.id` of the document getting updated
-   title    |         | The new title
-   content  |         | The new content in Kotodown
-   tags     |         | The new *array* of [TagObject](object.md#tagobject)s without `tag.id`
-   stream   |         | The new file stream
+   Key       | Default | Description
+  -----------|---------|--------------
+   :id       |         | The `file.id` of the file getting updated
+   historyId |         | The `file.historyId` of the file getting updated
+   title     |         | The new title
+   content   |         | The new content in Kotodown
+   tags      |         | The new *array* of [TagObject](object.md#tagobject)s without `tag.id`
+   stream    |         | The new file stream
 
 #### Response
 

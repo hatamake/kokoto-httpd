@@ -79,6 +79,22 @@ module.exports = function(express, model, config) {
 		});
 	});
 
+	express.get(`${config.url}/file/:id/history`, function(req, res) {
+		async.waterfall([
+			function(callback) {
+				model.getFile(req.params.id, callback);
+			},
+			function(file, callback) {
+				model.searchDocument('history', file.historyId, null, callback);
+			}
+		], function(error, files) {
+			res.jsonAuto({
+				error: error,
+				files: files
+			});
+		});
+	});
+
 	express.put(`${config.url}/file/:id`, function(req, res) {
 		if (res.shouldSignin()) { return; }
 
@@ -94,6 +110,7 @@ module.exports = function(express, model, config) {
 			function(fields, files, callback) {
 				if (files.stream) {
 					model.updateFile({
+						historyId: fields.historyId,
 						authorId: req.session.user.id,
 						filename: path.basename(files.stream.path),
 						content: fields.content,
