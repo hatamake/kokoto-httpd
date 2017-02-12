@@ -455,6 +455,7 @@ Updates specified comment.
    Key        | Default | Description
   ------------|---------|--------------
    :id        |         | The `comment.id` value of the comment getting updated
+   documentId |         | The `document.id` value of the document to which the comment is attached
    content    |         | The new content
 
 #### Response
@@ -470,9 +471,10 @@ Removes specified comment.
 
 #### Request
 
-   Key      | Default | Description
-  ----------|---------|--------------
-   :id      |         | The `comment.id` value of the comment getting removed
+   Key        | Default | Description
+  ------------|---------|--------------
+   :id        |         | The `comment.id` value of the comment getting removed
+   documentId |         | The `document.id` value of the document to which the comment is attached
 
 #### Response
 

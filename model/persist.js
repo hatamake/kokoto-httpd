@@ -964,7 +964,7 @@ class PersistModel {
 
 				return this.Document.count({
 					where: {
-						id: id,
+						id: comment.documentId,
 						isArchived: false
 					},
 					transaction: trx
