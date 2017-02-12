@@ -167,7 +167,24 @@ Fetches the [DocumentObject](object.md#documentobject) whose `document.id` is re
    error    | [ErrorObject](object.md#errorobject)
    document | [DocumentObject](object.md#documentobject)
 
-#### GET /document/:id/diff
+### GET /document/:id/history
+
+Fetches the change history of the [DocumentObject](object.md#documentobject) whose `document.id` is requested.
+
+#### Request
+
+   Key      | Default | Description
+  ----------|---------|--------------
+   :id      |         | Specify `document.id`.
+
+#### Response
+
+   Key       | Description
+  -----------|-------------
+   error     | [ErrorObject](object.md#errorobject)
+   documents | An *array* of [DocumentObject](object.md#documentobject)s
+
+### GET /document/:id/diff
 
 Compare the two given documents' content and send the result.
 
@@ -212,12 +229,13 @@ Updates specified document.
 
 #### Request
 
-   Key      | Default | Description
-  ----------|---------|--------------
-   :id      |         | The `document.id` of the document getting updated
-   title    |         | The new title
-   content  |         | The new content in Kotodown
-   tags     |         | The new *array* of [TagObject](object.md#tagobject)s without `tag.id`
+   Key       | Default | Description
+  -----------|---------|--------------
+   :id       |         | The `document.id` of the document getting updated
+   historyId |         | The `document.historyId` of the document getting updated
+   title     |         | The new title
+   content   |         | The new content in Kotodown
+   tags      |         | The new *array* of [TagObject](object.md#tagobject)s without `tag.id`
 
 #### Response
 

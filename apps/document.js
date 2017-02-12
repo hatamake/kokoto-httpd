@@ -41,6 +41,22 @@ module.exports = function(express, model, config) {
 		});
 	});
 
+	express.get(`${config.url}/document/:id/history`, function(req, res) {
+		async.waterfall([
+			function(callback) {
+				model.getDocument(req.params.id, callback);
+			},
+			function(document, callback) {
+				model.searchDocument('history', document.historyId, null, callback);
+			}
+		], function(error, documents) {
+			res.jsonAuto({
+				error: error,
+				documents: documents
+			});
+		});
+	});
+
 	express.get(`${config.url}/document/:id/diff`, function(req, res) {
 		const thisId = req.params.id;
 		const thatId = req.query.to;
@@ -67,12 +83,16 @@ module.exports = function(express, model, config) {
 	express.put(`${config.url}/document/:id`, function(req, res) {
 		if (res.shouldSignin()) { return; }
 
+		const authorId = req.session.user.id;
+		const {historyId, revision, title, content, tags} = req.body;
+
 		model.updateDocument(req.params.id, {
-			authorId: req.session.user.id,
-			revision: req.body.revision,
-			title: req.body.title,
-			content: req.body.content,
-			tags: req.body.tags
+			historyId: historyId,
+			revision: revision,
+			authorId: authorId,
+			title: title,
+			content: content,
+			tags: tags
 		}, function(error, document) {
 			res.jsonAuto({
 				error: error,
