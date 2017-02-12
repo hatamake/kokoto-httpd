@@ -2,7 +2,7 @@ const async = require('async');
 const formidable = require('formidable');
 const path = require('path');
 const fs = require('fs');
-const Jimp = require("jimp");
+const Jimp = require('jimp');
 
 const messages = require('../static/messages.json');
 
@@ -25,6 +25,17 @@ module.exports = function(express, model, config) {
 			res.jsonAuto({
 				error: error,
 				user: user
+			});
+		});
+	});
+
+	express.get(`${config.url}/user/search`, function(req, res) {
+		const {query, after} = req.query;
+
+		model.searchUser(query, after, function(error, users) {
+			res.jsonAuto({
+				error: error,
+				users: users
 			});
 		});
 	});
@@ -61,6 +72,9 @@ module.exports = function(express, model, config) {
 			}
 
 			id = req.session.user.id;
+		} else if (!/^[a-zA-Z0-9_]{4,20}$/.test(id)) {
+			res.jsonAuto({ error: new Error(messages.user_id_invalid) });
+			return;
 		}
 
 		async.waterfall([
@@ -101,7 +115,6 @@ module.exports = function(express, model, config) {
 
 					form.uploadDir = uploadDirPath;
 					form.keepExtensions = true;
-					form.maxFieldsSize = 2 * 1024 * 1024;
 
 					form.parse(req, callback);
 				} else if (type.startsWith('application/x-www-form-urlencoded')) {

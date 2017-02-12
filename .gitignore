@@ -1,7 +1,9 @@
 node_modules/
 
+.vscode/
+.eslintrc.*
+
 static/user/*.*
 !static/user/default.png
 
-.vscode
 run.js

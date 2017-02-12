@@ -27,6 +27,23 @@
 }
 ```
 
+## FileObject
+
+```javascript
+{
+  id:            Number,
+  historyId:     UUID,                  // The archived document and its new version share the same historyId
+  isArchived:    Boolean,
+  author:        UserObject,
+  filename:      String,
+  content:       String,                // The raw Kotodown content
+  parsedContent: String,                // The content converted to HTML
+  tags:          Array<TagObject>,
+  comments:      Array<CommentObject>,
+  createdAt:     Date
+}
+```
+
 ## TagObject
 
 ```javascript
@@ -57,6 +74,27 @@
 {
   start: Number,
   end:   Number
+}
+```
+
+## BlockDiffObject
+
+```javascript
+{
+  removed: Boolean,                        // Set true when the value has been removed
+  added:   Boolean,                        // Set true when the value has been added
+  value:   String | Array<WordDiffObject>  // A plain String value when no change made
+                                           // A removed or added String value in either case
+}                                          // A detailed word-diff result when both removed and added
+```
+
+## WordDiffObject
+
+```javascript
+{
+  removed: Boolean,                        // Set true when the value has been removed
+  added:   Boolean,                        // Set true when the value has been added
+  value:   String                          // A modified or kept value
 }
 ```
 

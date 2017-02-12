@@ -1,30 +1,7 @@
 const async = require('async');
-const Promise = require('bluebird');
 
 const PersistModel = require('./persist.js');
 const CacheModel = require('./cache.js');
-
-function callbackToPromise(callback, promise) {
-	return new Promise(function(resolve, reject) {
-		callback(function(error) {
-			if (error) {
-				reject(error);
-			} else if (arguments.length <= 2) {
-				resolve(arguments[1]);
-			} else {
-				resolve(Array.prototype.splice.call(arguments, 1));
-			}
-		});
-	})
-}
-
-function promiseToCallback(promise, callback) {
-	promise.then(function(result) {
-		callback(null, result);
-	}).catch(function(error) {
-		callback(error, null);
-	});
-}
 
 class KokotoModel {
 	constructor(config) {
@@ -35,48 +12,51 @@ class KokotoModel {
 	}
 
 	sync(force, callback) {
-		promiseToCallback(this.persist.sync(force), callback);
+		this.persist
+			.sync(force)
+			.asCallback(callback);
 	}
 
 	getUser(id, callback) {
-		const promise = this.persist
+		this.persist
 			.getUser(id)
 			.then(function(user) {
 				return user.finalize(null);
-			});
-		
-		promiseToCallback(promise, callback);
+			})
+			.asCallback(callback);
 	}
 
 	authUser(id, password, callback) {
-		const promise = this.persist
+		this.persist
 			.authUser(id, password, null)
 			.then(function(user) {
 				return user.finalize(null);
-			});
+			})
+			.asCallback(callback);
+	}
 
-		promiseToCallback(promise, callback);
+	searchUser(query, lastId, callback) {
+		query = (query || '');
+		lastId = (lastId || '\0');
+
+		this.persist
+			.searchUser(query, [lastId, this.config.site.pagination], null)
+			.map(function(user) {
+				return user.finalize(null);
+			})
+			.asCallback(callback);
 	}
 
 	addUser(user, callback) {
-		this.doWithTrx(
-			this.persist.addUser, user,
-			callback
-		);
+		this.doWithTrx(this.persist.addUser, user, callback);
 	}
 
 	updateUser(id, user, callback) {
-		this.doWithTrx(
-			this.persist.updateUser, id, user,
-			callback
-		);
+		this.doWithTrx(this.persist.updateUser, id, user, callback);
 	}
 
 	removeUser(id, callback) {
-		this.doWithTrx(
-			this.persist.removeUser, id,
-			callback
-		);
+		this.doWithTrx(this.persist.removeUser, id, callback);
 	}
 
 	getDocument(id, callback) {
@@ -92,7 +72,7 @@ class KokotoModel {
 					return;
 				}
 
-				const promise = this.persist
+				this.persist
 					.getDocument(id, null)
 					.then(function(document) {
 						return document.finalize(null);
@@ -100,52 +80,71 @@ class KokotoModel {
 					.then((document) => {
 						this.cache.saveDocument(document);
 						return document;
-					});
-
-				promiseToCallback(promise, callback);
+					})
+					.asCallback(callback);
 			}
 		], callback);
 	}
 
 	searchDocument(type, query, lastId, callback) {
-		const promise = this.persist
-			.searchDocument(
-				type, query,
-				[(lastId || -1), this.config.site.pagination],
-				null
-			)
+		query = (query || '');
+		lastId = (lastId || -1);
+
+		this.persist
+			.searchDocument(type, query, [lastId, this.config.site.pagination], null)
 			.map(function(document) {
 				return document.finalize(null);
-			});
-
-		promiseToCallback(promise, callback);
+			})
+			.asCallback(callback);
 	}
 
 	addDocument(document, callback) {
-		this.doWithTrx(
-			this.persist.addDocument, document,
-			callback
-		);
+		this.doWithTrx(this.persist.addDocument, document, callback);
 	}
 
 	updateDocument(id, document, callback) {
-		this.doWithTrx(
-			this.persist.updateDocument, id, document,
-			callback
-		);
+		this.doWithTrx(this.persist.updateDocument, id, document, callback);
 	}
 
 	archiveDocument(id, callback) {
-		this.doWithTrx(
-			this.persist.archiveDocument, id,
-			callback
-		);
+		this.doWithTrx(this.persist.archiveDocument, id, callback);
+	}
+
+	getFile(id, callback) {
+		this.doWithoutTrx(this.persist.getFile, id, callback);
+	}
+
+	searchFile(type, query, lastId, callback) {
+		query = (query || '');
+		lastId = (lastId || -1);
+
+		this.persist
+			.searchFile(type, query, [lastId, this.config.site.pagination], null)
+			.map(function(file) {
+				return file.finalize(null);
+			})
+			.asCallback(callback);
+	}
+
+	addFile(file, callback) {
+		this.doWithTrx(this.persist.addFile, file, callback);
+	}
+
+	updateFile(id, file, callback) {
+		this.doWithTrx(this.persist.updateFile, id, file, callback);
+	}
+
+	archiveFile(id, callback) {
+		this.doWithTrx(this.persist.archiveFile, id, callback);
 	}
 
 	searchTag(query, lastId, callback) {
+		query = (query || '');
+		lastId = (lastId || -1);
+
 		async.waterfall([
 			(callback) => {
-				this.cache.loadTagSearch(query, function(error, cachedTags) {
+				this.cache.loadTagSearch(query, lastId, function(error, cachedTags) {
 					callback(null, cachedTags);
 				});
 			},
@@ -156,68 +155,47 @@ class KokotoModel {
 				}
 
 				this.persist
-					.searchTag(
-						query,
-						[(lastId || -1), this.config.site.pagination],
-						null
-					)
+					.searchTag(query, [lastId, this.config.site.pagination], null)
 					.map(function(tag) {
 						return tag.finalize(null);
 					})
 					.then((tags) => {
-						callback(null, tags);
-						this.cache.saveTagSearch(query, tags);
+						this.cache.saveTagSearch(query, lastId, tags);
+						return tags;
 					})
-					.catch(function(error) {
-						callback(error, null);
-					});
+					.asCallback(callback);
 			}
 		], callback);
 	}
 
 	updateTag(id, tag, callback) {
-		this.doWithTrx(
-			this.persist.updateTag, id, tag,
-			callback
-		);
+		this.doWithTrx(this.persist.updateTag, id, tag, callback);
 
 		this.cache.clearDocument();
 		this.cache.clearTagSearch();
 	}
 
 	removeTag(id, callback) {
-		this.doWithTrx(
-			this.persist.removeTag, id,
-			callback
-		);
+		this.doWithTrx(this.persist.removeTag, id, callback);
 
 		this.cache.clearDocument();
 		this.cache.clearTagSearch();
 	}
 
 	addComment(documentId, comment, callback) {
-		this.doWithTrx(
-			this.persist.addComment, documentId, comment,
-			callback
-		);
+		this.doWithTrx(this.persist.addComment, documentId, comment, callback);
 
 		this.cache.clearDocument();
 	}
 
 	updateComment(id, comment, callback) {
-		this.doWithTrx(
-			this.persist.updateComment, id, comment,
-			callback
-		);
+		this.doWithTrx(this.persist.updateComment, id, comment, callback);
 
 		this.cache.clearDocument();
 	}
 
 	removeComment(id, callback) {
-		this.doWithTrx(
-			this.persist.removeComment, id,
-			callback
-		);
+		this.doWithTrx(this.persist.removeComment, id, callback);
 
 		this.cache.clearDocument();
 	}
@@ -225,25 +203,21 @@ class KokotoModel {
 	doWithoutTrx(method, ...args) {
 		const callback = args.pop();
 
-		const promise = method.apply(this.persist, args).then(function(result) {
+		method.apply(this.persist, args).then(function(result) {
 			return result.finalize(null);
-		});
-
-		promiseToCallback(promise, callback);
+		}).asCallback(callback);
 	}
 
 	doWithTrx(method, ...args) {
 		const callback = args.pop();
 
-		const promise = this.persist.client.transaction((trx) => {
+		this.persist.client.transaction((trx) => {
 			args.push(trx);
 
 			return method.apply(this.persist, args).then(function(result) {
 				return result.finalize(null);
 			});
-		});
-
-		promiseToCallback(promise, callback);
+		}).asCallback(callback);
 	}
 }
 

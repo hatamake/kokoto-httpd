@@ -34,14 +34,22 @@ class CacheModel {
 		this.do('del', 'document', callback);
 	}
 
-	saveTagSearch(query, tags, callback) {
-		this.do('hset', 'tags', query, JSON.stringify(tags), callback);
-	}
-
-	loadTagSearch(query, callback) {
+	saveTagSearch(query, after, tags, callback) {
 		if (!query) {
 			query = '';
 		}
+
+		query += '.' + after;
+
+		this.do('hset', 'tags', query, JSON.stringify(tags), callback);
+	}
+
+	loadTagSearch(query, after, callback) {
+		if (!query) {
+			query = '';
+		}
+
+		query += '.' + after;
 
 		this.do('hget', 'tags', query, function(error, tags) {
 			if (error) {

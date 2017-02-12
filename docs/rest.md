@@ -23,7 +23,7 @@ Fetches the value of `config.site` by its key.
 
 ### PUT /session
 
-Processes sign-in with provided user information.
+Processes sign-in with the provided user information.
 
 #### Request
 
@@ -53,7 +53,7 @@ Removes current session and sign out.
 
 ### POST /user
 
-Creates new user, and process sign-in with the new user.
+Creates a new user, and process sign-in with the new user.
 
 #### Request
 
@@ -99,7 +99,7 @@ Fetches the profile picture of the specified user.
 
 #### Response
 
-   A `image/png ` file stream.
+   An `image/png` file stream.
 
 ### PUT /user/me
 
@@ -118,7 +118,7 @@ Updates user information of currently signed in user.
    Key      | Description
   ----------|-------------
    error    | [ErrorObject](object.md#errorobject)
-   user     | [UserObject](object.md#userobject) of updated user.
+   user     | The [UserObject](object.md#userobject) of updated user.
 
 ### DELETE /user/me
 
@@ -129,6 +129,24 @@ Removes currently signed in user and destroys current session.
    Key      | Description
   ----------|-------------
    error    | [ErrorObject](object.md#errorobject)
+
+### GET /user/search
+
+Fetches the list of the users containing requested text in its `user.id` or `user.name`.
+
+#### Request
+
+   Key      | Default | Description
+  ----------|---------|--------------
+   [?query] |         | The target text searched from `user.id` or `user.name`
+   [?after] | `'\0'`  | The `user.id` of the last user in the previous search result. Used for pagination.
+
+#### Response
+
+   Key      | Description
+  ----------|-------------
+   error    | [ErrorObject](object.md#errorobject)
+   tags     | The *array* of [UserObject](object.md#userobject)s
 
 ## /document
 
@@ -149,9 +167,46 @@ Fetches the [DocumentObject](object.md#documentobject) whose `document.id` is re
    error    | [ErrorObject](object.md#errorobject)
    document | [DocumentObject](object.md#documentobject)
 
+### GET /document/:id/history
+
+Fetches the change history of the [DocumentObject](object.md#documentobject) whose `document.id` is requested.
+
+#### Request
+
+   Key      | Default | Description
+  ----------|---------|--------------
+   :id      |         | Specify `document.id`.
+
+#### Response
+
+   Key       | Description
+  -----------|-------------
+   error     | [ErrorObject](object.md#errorobject)
+   documents | An *array* of [DocumentObject](object.md#documentobject)s
+
+### GET /document/:id/diff
+
+Compare the two given documents' content and send the result.
+
+#### Request
+
+   Key      | Default | Description
+  ----------|---------|--------------
+   :id      |         | Specify `document.id` to compare from
+   ?to      |         | Specify `document.id` to compare to
+
+The document specified by `:id` is compared with `?to`.
+
+#### Response
+
+   Key      | Description
+  ----------|-------------
+   error    | [ErrorObject](object.md#errorobject)
+   diff     | An *array* of [BlockDiffObject](object.md#blockdiffobject)
+
 ### POST /document
 
-Creates new document.
+Creates a new document.
 
 #### Request
 
@@ -174,12 +229,13 @@ Updates specified document.
 
 #### Request
 
-   Key      | Default | Description
-  ----------|---------|--------------
-   :id      |         | The `document.id` of the document getting updated
-   title    |         | The new title
-   content  |         | The new content in Kotodown
-   tags     |         | The new *array* of [TagObject](object.md#tagobject)s without `tag.id`
+   Key       | Default | Description
+  -----------|---------|--------------
+   :id       |         | The `document.id` of the document getting updated
+   historyId |         | The `document.historyId` of the document getting updated
+   title     |         | The new title
+   content   |         | The new content in Kotodown
+   tags      |         | The new *array* of [TagObject](object.md#tagobject)s without `tag.id`
 
 #### Response
 
@@ -222,6 +278,116 @@ Fetch the list of the documents satisfying requested criteria.
   -----------|-------------
    error     | [ErrorObject](object.md#errorobject)
    documents | The *array* of [DocumentObject](object.md#documentobject)s
+
+## /file
+
+### GET /file/:id
+
+Fetches the [FileObject](object.md#fileobject) whose `file.id` is requested.
+
+#### Request
+
+   Key      | Default | Description
+  ----------|---------|--------------
+   :id      |         | Specify `file.id`.
+
+#### Response
+
+   Key      | Description
+  ----------|-------------
+   error    | [ErrorObject](object.md#errorobject)
+   file     | [FileObject](object.md#fileobject)
+
+### GET /file/:id/stream
+
+Fetches the file stream of the specified file.
+
+#### Request
+
+   Key      | Default | Description
+  ----------|---------|--------------
+   :id      |         | Specify `file.id`.
+
+#### Response
+
+   The uploaded file stream.
+
+### POST /file
+
+Creates a new file.
+
+#### Request
+
+   Key      | Default | Description
+  ----------|---------|--------------
+   title    |         | The title
+   content  |         | The content in Kotodown
+   tags     |         | The *array* of [TagObject](object.md#tagobject)s without `tag.id`
+   stream   |         | The file stream
+
+#### Response
+
+   Key      | Description
+  ----------|-------------
+   error    | [ErrorObject](object.md#errorobject)
+   file     | [FileObject](object.md#fileobject)
+
+### PUT /file/:id
+
+Updates specified document.
+
+#### Request
+
+   Key       | Default | Description
+  -----------|---------|--------------
+   :id       |         | The `file.id` of the file getting updated
+   historyId |         | The `file.historyId` of the file getting updated
+   title     |         | The new title
+   content   |         | The new content in Kotodown
+   tags      |         | The new *array* of [TagObject](object.md#tagobject)s without `tag.id`
+   stream    |         | The new file stream
+
+#### Response
+
+   Key      | Description
+  ----------|-------------
+   error    | [ErrorObject](object.md#errorobject)
+   file     | The [FileObject](object.md#fileobject) after update
+
+### DELETE /file/:id
+
+Set specified file as archived.
+
+#### Request
+
+   Key      | Default | Description
+  ----------|---------|--------------
+   :id      |         | The `file.id` of the file getting removed
+
+#### Response
+
+   Key      | Description
+  ----------|-------------
+   error    | [ErrorObject](object.md#errorobject)
+
+### GET /file/search
+
+Fetch the list of the files satisfying requested criteria.
+
+#### Request
+
+   Key      | Default  | Description
+  ----------|----------|--------------
+   [?type]  | `'date'` | The type of search criteria. Following types are available: `'date'`, `'history'`, `'tag'`, `'text'`
+   [?query] |          | The value of `file.historyId`, `tag.id`, or plain text depending on the specified type
+   [?after] | `-1`     | The `file.id` of the last document in the previous search result. Used for pagination.
+
+#### Response
+
+   Key       | Description
+  -----------|-------------
+   error     | [ErrorObject](object.md#errorobject)
+   files     | The *array* of [FileObject](object.md#fileobject)s
 
 ## /tag
 
@@ -282,7 +448,7 @@ Fetches the list of the tags containing requested text in its title.
 
 ### POST /comment
 
-Creates new comment.
+Creates a new comment.
 
 #### Request
 
@@ -308,6 +474,7 @@ Updates specified comment.
    Key        | Default | Description
   ------------|---------|--------------
    :id        |         | The `comment.id` value of the comment getting updated
+   documentId |         | The `document.id` value of the document to which the comment is attached
    content    |         | The new content
 
 #### Response
@@ -323,9 +490,10 @@ Removes specified comment.
 
 #### Request
 
-   Key      | Default | Description
-  ----------|---------|--------------
-   :id      |         | The `comment.id` value of the comment getting removed
+   Key        | Default | Description
+  ------------|---------|--------------
+   :id        |         | The `comment.id` value of the comment getting removed
+   documentId |         | The `document.id` value of the document to which the comment is attached
 
 #### Response
 
