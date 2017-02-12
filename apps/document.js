@@ -7,13 +7,12 @@ module.exports = function(express, model, config) {
 	express.post(`${config.url}/document`, function(req, res) {
 		if (res.shouldSignin()) { return; }
 
-		model.addDocument({
-			authorId: req.session.user.id,
-			revision: 1,
-			title: req.body.title,
-			content: (req.body.content || ''),
-			tags: req.body.tags
-		}, function(error, document) {
+		const authorId = req.session.user.id;
+		const {title} = req.body;
+		const content = (req.body.content || '');
+		const tags = (req.body.tags || []);
+
+		model.document.create(authorId, title, content, tags, function(error, document) {
 			res.jsonAuto({
 				error: error,
 				document: document
@@ -22,9 +21,11 @@ module.exports = function(express, model, config) {
 	});
 
 	express.get(`${config.url}/document/search`, function(req, res) {
-		const {query, type, after} = req.query;
+		if (res.shouldSignin()) { return; }
 
-		model.searchDocument(type, query, after, function(error, documents) {
+		const {type, query, after} = req.query;
+
+		model.document.search(type, query, after, function(error, documents) {
 			res.jsonAuto({
 				error: error,
 				documents: documents
@@ -33,7 +34,9 @@ module.exports = function(express, model, config) {
 	});
 
 	express.get(`${config.url}/document/:id`, function(req, res) {
-		model.getDocument(req.params.id, function(error, document) {
+		if (res.shouldSignin()) { return; }
+
+		model.document.get(req.params.id, function(error, document) {
 			res.jsonAuto({
 				error: error,
 				document: document
@@ -42,12 +45,14 @@ module.exports = function(express, model, config) {
 	});
 
 	express.get(`${config.url}/document/:id/history`, function(req, res) {
+		if (res.shouldSignin()) { return; }
+
 		async.waterfall([
 			function(callback) {
-				model.getDocument(req.params.id, callback);
+				model.document.get(req.params.id, callback);
 			},
 			function(document, callback) {
-				model.searchDocument('history', document.historyId, null, callback);
+				model.document.search('history', document.historyId, -1, callback);
 			}
 		], function(error, documents) {
 			res.jsonAuto({
@@ -58,13 +63,15 @@ module.exports = function(express, model, config) {
 	});
 
 	express.get(`${config.url}/document/:id/diff`, function(req, res) {
+		if (res.shouldSignin()) { return; }
+
 		const thisId = req.params.id;
 		const thatId = req.query.to;
 
 		async.waterfall([
 			function(callback) {
 				async.map([thisId, thatId], function(id, callback) {
-					model.getDocument(id, callback);
+					model.document.get(id, callback);
 				}, callback);
 			},
 			function(documents, callback) {
@@ -84,16 +91,12 @@ module.exports = function(express, model, config) {
 		if (res.shouldSignin()) { return; }
 
 		const authorId = req.session.user.id;
-		const {historyId, revision, title, content, tags} = req.body;
+		const {id} = req.params;
+		const {title} = req.body;
+		const content = (req.body.content || '');
+		const tags = (req.body.tags || []);
 
-		model.updateDocument(req.params.id, {
-			historyId: historyId,
-			revision: revision,
-			authorId: authorId,
-			title: title,
-			content: content,
-			tags: tags
-		}, function(error, document) {
+		model.document.update(id, authorId, title, content, tags, function(error, document) {
 			res.jsonAuto({
 				error: error,
 				document: document
@@ -104,7 +107,51 @@ module.exports = function(express, model, config) {
 	express.delete(`${config.url}/document/:id`, function(req, res) {
 		if (res.shouldSignin()) { return; }
 
-		model.archiveDocument(req.params.id, function(error) {
+		const {id} = req.params;
+		const userId = req.session.user.id;
+
+		model.document.archive(id, userId, function(error) {
+			res.jsonAuto({ error: error });
+		});
+	});
+
+	express.post(`${config.url}/document/:id/comment`, function(req, res) {
+		if (res.shouldSignin()) { return; }
+
+		const {id} = req.params;
+		const authorId = req.session.user.id;
+		const {content, range} = req.body;
+
+		model.document.addComment(id, authorId, content, range, function(error, comment) {
+			res.jsonAuto({
+				error: error,
+				comment: comment
+			});
+		});
+	});
+
+	express.put(`${config.url}/document/:id/comment/:commentId`, function(req, res) {
+		if (res.shouldSignin()) { return; }
+
+		const {id, commentId} = req.params;
+		const authorId = req.session.user.id;
+		const {content} = req.body;
+
+		model.document.updateComment(id, commentId, authorId, content, function(error, comment) {
+			res.jsonAuto({
+				error: error,
+				comment: comment
+			});
+		});
+	});
+
+	express.delete(`${config.url}/document/:id/comment/:commentId`, function(req, res) {
+		if (res.shouldSignin()) { return; }
+
+		const {id, commentId} = req.params;
+		const userId = req.session.user.id;
+
+		model.document.removeComment(id, commentId, userId, function(error) {
 			res.jsonAuto({ error: error });
 		});
 	});

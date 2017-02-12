@@ -5,7 +5,7 @@ const http = require('http');
 const express = require('express');
 const util = require('util');
 
-const KokotoModel = require('../model');
+const initModel = require('../model').init;
 const messages = require('../static/messages.json');
 
 const defaultConfig = {
@@ -15,8 +15,12 @@ const defaultConfig = {
 	session: 'session',
 	plugins: [],
 	database: {
-		persist: 'mysql://127.0.0.1:3306/kokoto',
-		cache: null
+		persist: {
+			client: 'mysql2',
+			connection: 'mysql://127.0.0.1:3306/Kokoto'
+		},
+		cache: null,
+		schemaPostfix: ''
 	},
 	site: {
 		name: 'Kokoto',
@@ -25,7 +29,7 @@ const defaultConfig = {
 	debug: false
 };
 
-const middlewares = ['body', 'session', 'error', 'route'];
+const middlewares = ['body', 'error', 'session', 'route'];
 
 class KokotoHttpd extends http.Server {
 	constructor(config) {
@@ -34,12 +38,14 @@ class KokotoHttpd extends http.Server {
 
 		this.express = _express;
 		this.config = _.merge(defaultConfig, config);
-		this.model = new KokotoModel(this.config);
+		this.model = null;
 
-		this.model.sync(false, (error) => {
+		initModel(this.config).asCallback((error, model) => {
 			if (error) {
 				throw error;
 			}
+
+			this.model = model;
 
 			middlewares.forEach((name) => {
 				const middleware = require(`./${name}.js`);

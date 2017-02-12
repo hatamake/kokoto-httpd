@@ -1,9 +1,17 @@
 const async = require('async');
-const formidable = require('formidable');
 const path = require('path');
 const fs = require('fs');
 
 const messages = require('../static/messages.json');
+const {parseIncomingForm} = require('../util/formidable');
+
+function rollbackUpload(files, callback) {
+	async.each(files, function(file, callback) {
+		fs.unlink(file.path, callback);
+	}, function() {
+		callback(new Error(messages.request_invalid));
+	});
+}
 
 module.exports = function(express, model, config) {
 	const uploadDirPath = path.join(__dirname, '..', 'static', 'file');
@@ -13,27 +21,18 @@ module.exports = function(express, model, config) {
 
 		async.waterfall([
 			function(callback) {
-				const form = new formidable.IncomingForm();
-
-				form.uploadDir = uploadDirPath;
-				form.keepExtensions = true;
-
-				form.parse(req, callback);
+				parseIncomingForm(req, uploadDirPath, callback);
 			},
 			function(fields, files, callback) {
 				if (files.stream) {
-					model.addFile({
-						authorId: req.session.user.id,
-						filename: path.basename(files.stream.path),
-						content: fields.content,
-						tags: fields.tags
-					}, callback);
+					const authorId = req.session.user.id;
+					const filename = path.basename(files.stream.path);
+					const content = (fields.content || '');
+					const tags = JSON.parse(fields.tags || '[]');
+
+					model.file.create(authorId, filename, content, tags, callback);
 				} else {
-					async.each(files, function(file, callback) {
-						fs.unlink(file.path, callback);
-					}, function(error) {
-						callback(new Error(messages.request_invalid));
-					});
+					rollbackUpload(files, callback);
 				}
 			}
 		], function(error, file) {
@@ -45,9 +44,11 @@ module.exports = function(express, model, config) {
 	});
 
 	express.get(`${config.url}/file/search`, function(req, res) {
+		if (res.shouldSignin()) { return; }
+
 		const {query, type, after} = req.query;
 
-		model.searchFile(type, query, after, function(error, files) {
+		model.file.search(type, query, after, function(error, files) {
 			res.jsonAuto({
 				error: error,
 				files: files
@@ -56,7 +57,9 @@ module.exports = function(express, model, config) {
 	});
 
 	express.get(`${config.url}/file/:id`, function(req, res) {
-		model.getFile(req.params.id, function(error, file) {
+		if (res.shouldSignin()) { return; }
+
+		model.file.get(req.params.id, function(error, file) {
 			res.jsonAuto({
 				error: error,
 				file: file
@@ -65,9 +68,11 @@ module.exports = function(express, model, config) {
 	});
 
 	express.get(`${config.url}/file/:id/stream`, function(req, res) {
+		if (res.shouldSignin()) { return; }
+
 		async.waterfall([
 			function(callback) {
-				model.getFile(req.params.id, callback);
+				model.file.get(req.params.id, callback);
 			},
 			function(file, callback) {
 				res.sendFile(path.join(uploadDirPath, file.filename), callback);
@@ -80,12 +85,14 @@ module.exports = function(express, model, config) {
 	});
 
 	express.get(`${config.url}/file/:id/history`, function(req, res) {
+		if (res.shouldSignin()) { return; }
+
 		async.waterfall([
 			function(callback) {
-				model.getFile(req.params.id, callback);
+				model.get.get(req.params.id, callback);
 			},
 			function(file, callback) {
-				model.searchDocument('history', file.historyId, null, callback);
+				model.file.search('history', file.historyId, -1, callback);
 			}
 		], function(error, files) {
 			res.jsonAuto({
@@ -100,28 +107,18 @@ module.exports = function(express, model, config) {
 
 		async.waterfall([
 			function(callback) {
-				const form = new formidable.IncomingForm();
-
-				form.uploadDir = uploadDirPath;
-				form.keepExtensions = true;
-
-				form.parse(req, callback);
+				parseIncomingForm(req, uploadDirPath, callback);
 			},
 			function(fields, files, callback) {
 				if (files.stream) {
-					model.updateFile({
-						historyId: fields.historyId,
-						authorId: req.session.user.id,
-						filename: path.basename(files.stream.path),
-						content: fields.content,
-						tags: fields.tags
-					}, callback);
+					const authorId = req.session.user.id;
+					const filename = path.basename(files.stream.path);
+					const content = (fields.content || '');
+					const tags = JSON.parse(fields.tags || '[]');
+
+					model.file.update(authorId, filename, content, tags, callback);
 				} else {
-					async.each(files, function(file, callback) {
-						fs.unlink(file.path, callback);
-					}, function(error) {
-						callback(new Error(messages.request_invalid));
-					});
+					rollbackUpload(files, callback);
 				}
 			}
 		], function(error, file) {
@@ -135,7 +132,51 @@ module.exports = function(express, model, config) {
 	express.delete(`${config.url}/file/:id`, function(req, res) {
 		if (res.shouldSignin()) { return; }
 
-		model.archiveFile(req.params.id, function(error) {
+		const {id} = req.params;
+		const userId = req.session.user.id;
+
+		model.archiveFile(id, userId, function(error) {
+			res.jsonAuto({ error: error });
+		});
+	});
+
+	express.post(`${config.url}/file/:id/comment`, function(req, res) {
+		if (res.shouldSignin()) { return; }
+
+		const {id} = req.params;
+		const authorId = req.session.user.id;
+		const {content} = req.body;
+
+		model.file.addComment(id, authorId, content, function(error, comment) {
+			res.jsonAuto({
+				error: error,
+				comment: comment
+			});
+		});
+	});
+
+	express.put(`${config.url}/file/:id/comment/:commentId`, function(req, res) {
+		if (res.shouldSignin()) { return; }
+
+		const {id, commentId} = req.params;
+		const authorId = req.session.user.id;
+		const {content} = req.body;
+
+		model.file.updateComment(id, commentId, authorId, content, function(error, comment) {
+			res.jsonAuto({
+				error: error,
+				comment: comment
+			});
+		});
+	});
+
+	express.delete(`${config.url}/file/:id/comment/:commentId`, function(req, res) {
+		if (res.shouldSignin()) { return; }
+
+		const {id, commentId} = req.params;
+		const userId = req.session.user.id;
+
+		model.file.removeComment(id, commentId, userId, function(error) {
 			res.jsonAuto({ error: error });
 		});
 	});

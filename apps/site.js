@@ -1,15 +1,17 @@
-const messages = require('../static/messages.json');
+const {HttpError} = require('../server/error');
 
 module.exports = function(express, model, config) {
 	express.get(`${config.url}/site/:key`, function(req, res) {
-		const {key} = req.params;
+		if (res.shouldSignin()) { return; }
 
-		let error, result = null;
+		const {key} = req.params;
+		let error = null;
+		let result = null;
 
 		if (config.site.hasOwnProperty(key)) {
 			result = config.site[key];
 		} else {
-			error = new Error(messages.request_invalid);
+			error = new HttpError('site_key_not_exist', 404);
 		}
 
 		res.jsonAuto({

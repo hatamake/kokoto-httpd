@@ -1,6 +1,6 @@
 {
   "name": "kokoto-httpd",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Backend REST API server for Kokoto",
   "main": "server/index.js",
   "devDependencies": {},
@@ -24,6 +24,7 @@
     "async": "^2.1.4",
     "bluebird": "^3.4.7",
     "body-parser": "^1.16.0",
+    "bookshelf": "^0.10.3",
     "connect-redis": "^3.2.0",
     "diff": "^3.2.0",
     "express": "^4.14.1",
@@ -31,9 +32,10 @@
     "formidable": "^1.1.1",
     "hangul-js": "^0.2.2",
     "jimp": "^0.2.27",
-    "koto-parser": "^0.2.4",
+    "knex": "^0.12.6",
+    "koto-parser": "^0.2.7",
     "lodash": "^4.17.4",
     "redis": "^2.6.5",
-    "sequelize": "^3.30.2"
+    "uuid": "^3.0.1"
   }
 }

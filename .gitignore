@@ -1,7 +1,7 @@
 node_modules/
 
 .vscode/
-.eslintrc.*
+.eslintrc.json
 
 static/user/*.*
 !static/user/default.png

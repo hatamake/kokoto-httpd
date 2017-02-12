@@ -279,6 +279,61 @@ Fetch the list of the documents satisfying requested criteria.
    error     | [ErrorObject](object.md#errorobject)
    documents | The *array* of [DocumentObject](object.md#documentobject)s
 
+### POST /document/:documentId/comment
+
+Creates a new comment.
+
+#### Request
+
+   Key         | Default | Description
+  -------------|---------|--------------
+   :documentId |         | The `document.id` value of the document on which the new comment is added
+   content     |         | The content of the new comment
+   range       |         | The [RangeObject](object.md#rangeobject) specifying the position of the new comment in the document
+
+#### Response
+
+   Key      | Description
+  ----------|-------------
+   error    | [ErrorObject](object.md#errorobject)
+   comment  | [CommentObject](object.md#commentobject)
+
+### PUT /document/:documentId/comment/:commentId
+
+Updates specified comment.
+
+#### Request
+
+   Key         | Default | Description
+  -------------|---------|--------------
+   :documentId |         | The `document.id` value of the document to which the comment is attached
+   :commentId  |         | The `comment.id` value of the comment getting updated
+   content     |         | The new content
+
+#### Response
+
+   Key      | Description
+  ----------|-------------
+   error    | [ErrorObject](object.md#errorobject)
+   comment  | The [CommentObject](object.md#commentobject) after update
+
+### DELETE /document/:documentId/comment/:commentId
+
+Removes specified comment.
+
+#### Request
+
+   Key         | Default | Description
+  -------------|---------|--------------
+   :documentId |         | The `document.id` value of the document to which the comment is attached
+   :commentId  |         | The `comment.id` value of the comment getting removed
+
+#### Response
+
+   Key      | Description
+  ----------|-------------
+   error    | [ErrorObject](object.md#errorobject)
+
 ## /file
 
 ### GET /file/:id
@@ -389,6 +444,60 @@ Fetch the list of the files satisfying requested criteria.
    error     | [ErrorObject](object.md#errorobject)
    files     | The *array* of [FileObject](object.md#fileobject)s
 
+### POST /file/:fileId/comment
+
+Creates a new comment.
+
+#### Request
+
+   Key     | Default | Description
+  ---------|---------|--------------
+   :fileId |         | The `file.id` value of the file on which the new comment is added
+   content |         | The content of the new comment
+
+#### Response
+
+   Key      | Description
+  ----------|-------------
+   error    | [ErrorObject](object.md#errorobject)
+   comment  | [CommentObject](object.md#commentobject)
+
+### PUT /file/:fileId/comment/:commentId
+
+Updates specified comment.
+
+#### Request
+
+   Key        | Default | Description
+  ------------|---------|--------------
+   :fileId    |         | The `file.id` value of the file to which the comment is attached
+   :commentId |         | The `comment.id` value of the comment getting updated
+   content    |         | The new content
+
+#### Response
+
+   Key      | Description
+  ----------|-------------
+   error    | [ErrorObject](object.md#errorobject)
+   comment  | The [CommentObject](object.md#commentobject) after update
+
+### DELETE /file/:fileId/comment/:commentId
+
+Removes specified comment.
+
+#### Request
+
+   Key        | Default | Description
+  ------------|---------|--------------
+   :fileId    |         | The `file.id` value of the file to which the comment is attached
+   :commentId |         | The `comment.id` value of the comment getting removed
+
+#### Response
+
+   Key      | Description
+  ----------|-------------
+   error    | [ErrorObject](object.md#errorobject)
+
 ## /tag
 
 ### PUT /tag/:id
@@ -443,60 +552,3 @@ Fetches the list of the tags containing requested text in its title.
   ----------|-------------
    error    | [ErrorObject](object.md#errorobject)
    tags     | The *array* of [TagObject](object.md#tagobject)s
-
-## /comment
-
-### POST /comment
-
-Creates a new comment.
-
-#### Request
-
-   Key        | Default | Description
-  ------------|---------|--------------
-   documentId |         | The `document.id` value of the document on which the new comment is added
-   content    |         | The content of the new comment
-   range      |         | The [RangeObject](object.md#rangeobject) specifying the position of the new comment in the document
-
-#### Response
-
-   Key      | Description
-  ----------|-------------
-   error    | [ErrorObject](object.md#errorobject)
-   comment  | [CommentObject](object.md#commentobject)
-
-### PUT /comment/:id
-
-Updates specified comment.
-
-#### Request
-
-   Key        | Default | Description
-  ------------|---------|--------------
-   :id        |         | The `comment.id` value of the comment getting updated
-   documentId |         | The `document.id` value of the document to which the comment is attached
-   content    |         | The new content
-
-#### Response
-
-   Key      | Description
-  ----------|-------------
-   error    | [ErrorObject](object.md#errorobject)
-   comment  | The [CommentObject](object.md#commentobject) after update
-
-### DELETE /comment/:id
-
-Removes specified comment.
-
-#### Request
-
-   Key        | Default | Description
-  ------------|---------|--------------
-   :id        |         | The `comment.id` value of the comment getting removed
-   documentId |         | The `document.id` value of the document to which the comment is attached
-
-#### Response
-
-   Key      | Description
-  ----------|-------------
-   error    | [ErrorObject](object.md#errorobject)

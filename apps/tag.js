@@ -1,8 +1,11 @@
 module.exports = function(express, model, config) {
 	express.get(`${config.url}/tag/search`, function(req, res) {
-		const {query, after} = req.query;
+		if (res.shouldSignin()) { return; }
 
-		model.searchTag(query, after, function(error, tags) {
+		const query = (req.query.query || '');
+		const {after} = req.query;
+
+		model.tag.search(query, after, function(error, tags) {
 			res.jsonAuto({
 				error: error,
 				tags: tags
@@ -16,10 +19,7 @@ module.exports = function(express, model, config) {
 		const {id} = req.params;
 		const {title, color} = req.body;
 
-		model.updateTag(id, {
-			title: title,
-			color: color
-		}, function(error, tag) {
+		model.tag.update(id, title, color, function(error, tag) {
 			res.jsonAuto({
 				error: error,
 				tag: tag
@@ -30,10 +30,10 @@ module.exports = function(express, model, config) {
 	express.delete(`${config.url}/tag/:id`, function(req, res) {
 		if (res.shouldSignin()) { return; }
 
-		model.removeTag(req.params.id, function(error) {
-			res.jsonAuto({
-				error: error
-			});
+		const {id} = req.params;
+
+		model.tag.remove(id, function(error) {
+			res.jsonAuto({ error: error });
 		});
 	});
 };

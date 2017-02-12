@@ -24,18 +24,18 @@ function render(content, model, callback) {
 
 function renderInline(content, model, callback) {
 	Parser.render(content, {
-		blockTypes: [CommentBlock],
+		blockTypes: [PlainBlock],
 		tokenTypes: [CodeToken, BoldToken, ItalicToken, UnderlineToken, StrikeToken, LinkToken],
 		model: model
 	}, callback);
 }
 
-class CommentBlock extends BaseBlock {
+class PlainBlock extends BaseBlock {
 
 	constructor(contentTokens) {
 		super();
 
-		this.tokens = contentTokens;
+		this.contentTokens = contentTokens;
 	}
 
 	static match(scanner) {
@@ -48,7 +48,7 @@ class CommentBlock extends BaseBlock {
 		const content = scanner.pop();
 		const contentTokens = InlineParser.parse(content, options);
 
-		return new CommentBlock(contentTokens);
+		return new PlainBlock(contentTokens);
 	}
 
 	render(options, callback) {

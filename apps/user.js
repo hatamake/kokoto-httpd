@@ -1,10 +1,9 @@
 const async = require('async');
-const formidable = require('formidable');
 const path = require('path');
 const fs = require('fs');
 const Jimp = require('jimp');
 
-const messages = require('../static/messages.json');
+const {parseIncomingForm} = require('../util/formidable');
 
 module.exports = function(express, model, config) {
 	const uploadDirPath = path.join(config.path, 'static', 'user');
@@ -13,12 +12,8 @@ module.exports = function(express, model, config) {
 	express.post(`${config.url}/user`, function(req, res) {
 		const {id, password, name} = req.body;
 
-		model.addUser({
-			id: id,
-			password: password,
-			name: name
-		}, function(error, user) {
-			if (!error) {
+		model.user.create(id, password, name, function(error, user) {
+			if (!error && user) {
 				req.session.user = user;
 			}
 
@@ -29,52 +24,37 @@ module.exports = function(express, model, config) {
 		});
 	});
 
-	express.get(`${config.url}/user/search`, function(req, res) {
-		const {query, after} = req.query;
+	express.get(`${config.url}/user/:id`, function(req, res) {
+		if (res.shouldSignin()) { return; }
 
-		model.searchUser(query, after, function(error, users) {
+		(function(id, callback) {
+			if (id === 'me') {
+				callback(null, req.session.user);
+			} else {
+				model.user.get(id, callback);
+			}
+		})(req.params.id, function(error, user) {
 			res.jsonAuto({
 				error: error,
-				users: users
+				user: user
 			});
 		});
 	});
 
-	express.get(`${config.url}/user/:id`, function(req, res) {
-		let id = req.params.id;
-
-		(function(callback) {
-			if (id === 'me') {
-				if (res.shouldSignin()) {
-					callback(null, null, true);
-				} else {
-					callback(null, req.session.user, false);
-				}
-			} else {
-				model.getUser(id, callback);
-			}
-		})(function(error, user, sent) {
-			if (!sent) {
-				res.jsonAuto({
-					error: error,
-					user: user
-				});
-			}
-		});
-	});
-
 	express.get(`${config.url}/user/:id/picture`, function(req, res) {
-		let id = req.params.id;
+		if (res.shouldSignin()) { return; }
+
+		let {id} = req.params;
 
 		if (id === 'me') {
-			if (res.shouldSignin()) {
+			id = req.session.user.id;
+		} else {
+			try {
+				id = model.user._validateId(id);
+			} catch(error) {
+				res.jsonAuto({ error: error });
 				return;
 			}
-
-			id = req.session.user.id;
-		} else if (!/^[a-zA-Z0-9_]{4,20}$/.test(id)) {
-			res.jsonAuto({ error: new Error(messages.user_id_invalid) });
-			return;
 		}
 
 		async.waterfall([
@@ -104,24 +84,12 @@ module.exports = function(express, model, config) {
 	express.put(`${config.url}/user/me`, function(req, res) {
 		if (res.shouldSignin()) { return; }
 
+		const {id} = req.session.user;
+		const picturePath = path.join(uploadDirPath, `${id}.png`);
+
 		async.waterfall([
 			function(callback) {
-				const type = req.get('Content-Type');
-
-				if (!type) {
-					callback(new Error(messages.request_invalid));
-				} else if (type.startsWith('multipart/form-data')) {
-					const form = new formidable.IncomingForm();
-
-					form.uploadDir = uploadDirPath;
-					form.keepExtensions = true;
-
-					form.parse(req, callback);
-				} else if (type.startsWith('application/x-www-form-urlencoded')) {
-					callback(null, req.body, {});
-				} else {
-					callback(null, {}, {});
-				}
+				parseIncomingForm(req, uploadDirPath, callback);
 			},
 			function(fields, files, callback) {
 				if (!files.picture) {
@@ -129,18 +97,17 @@ module.exports = function(express, model, config) {
 					return;
 				}
 
-				const oldPath = files.picture.path;
-				const newPath = path.join(uploadDirPath, `${req.session.user.id}.png`);
+				const tmpPicturePath = files.picture.path;
 
 				async.waterfall([
 					function(callback) {
-						Jimp.read(oldPath, callback)
+						Jimp.read(tmpPicturePath, callback);
 					},
 					function(jimp, callback) {
-						jimp.resize(40, 40).write(newPath, callback);
+						jimp.resize(40, 40).write(picturePath, callback);
 					},
 					function(_, callback) {
-						fs.unlink(oldPath, callback);
+						fs.unlink(tmpPicturePath, callback);
 					},
 					function(callback) {
 						callback(null, fields);
@@ -148,7 +115,7 @@ module.exports = function(express, model, config) {
 				], callback);
 			},
 			function(user, callback) {
-				model.updateUser(req.session.user.id, user, callback);
+				model.user.update(id, user, callback);
 			}
 		], function(error, user) {
 			res.jsonAuto({

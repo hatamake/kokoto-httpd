@@ -13,7 +13,7 @@ module.exports = function(express, model, config) {
 
 		if (cacheConfig) {
 			const RedisStore = require('connect-redis')(session);
-			result.store = new RedisStore({ client: model.cache.client });
+			result.store = new RedisStore({ client: model._redis });
 		}
 
 		return result;
