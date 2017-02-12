@@ -603,7 +603,7 @@ class PersistModel {
 	archiveDocumentInstance(document, trx) {
 		return document.update({ isArchived: true }, { transaction: trx }).then(() => {
 			return document.getTags({ transaction: trx }).map((tag) => {
-				return this.decreaseOrRemoveTag(tag.id, trx);
+				return this.decreaseTag(tag.id, trx);
 			});
 		}).thenReturn(document);
 	}
@@ -794,7 +794,7 @@ class PersistModel {
 	archiveFileInstance(file, trx) {
 		return file.update({ isArchived: true }, { transaction: trx }).then(() => {
 			return file.getTags({ transaction: trx }).map((tag) => {
-				return this.decreaseOrRemoveTag(tag.id, trx);
+				return this.decreaseTag(tag.id, trx);
 			});
 		}).thenReturn(file);
 	}
@@ -886,14 +886,10 @@ class PersistModel {
 		});
 	}
 
-	decreaseOrRemoveTag(id, trx) {
+	decreaseTag(id, trx) {
 		return this.Tag.findById(id, { transaction: trx }).then(function(tag) {
 			if (!tag) {
 				throw new HttpError('tag_not_exist', 404);
-			}
-
-			if (tag.count == 1) {
-				return tag.destroy({ transaction: trx }).thenReturn(tag);
 			}
 
 			return tag.update({ count: tag.count - 1 }, { transaction: trx });
