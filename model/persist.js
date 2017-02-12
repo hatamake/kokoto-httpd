@@ -455,7 +455,7 @@ class PersistModel {
 				id: { $gt: pagination[0] },
 				historyId: historyId
 			},
-			order: [['updatedAt', 'DESC']],
+			order: [['revision', 'DESC']],
 			limit: pagination[1],
 			transaction: trx
 		}).then(function(documents) {
@@ -646,7 +646,7 @@ class PersistModel {
 				id: { $gt: pagination[0] },
 				historyId: historyId
 			},
-			order: [['updatedAt', 'DESC']],
+			order: [['revision', 'DESC']],
 			limit: pagination[1],
 			transaction: trx
 		}).then(function(files) {
